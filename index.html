@@ -955,6 +955,158 @@ body::after {
   .modal { border-radius: 16px; }
   .settings-panel { width: 90vw; }
 }
+
+/* ── MODAL CLOSE BTN ── */
+.modal-close {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.modal-close:hover { border-color: var(--red); color: var(--red); }
+
+/* ── ADD MODAL STEPS ── */
+.add-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.add-step-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.add-step-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.add-step-btn:hover:not(.active) {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+/* ── INPUT ZONES ── */
+.input-zone { display: none; margin-bottom: 16px; }
+.input-zone.visible { display: block; }
+
+.url-row {
+  display: flex;
+  gap: 8px;
+}
+.url-row input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.url-row input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.btn-fetch {
+  padding: 10px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-fetch:hover { background: var(--accent-dark); }
+
+/* ── DROP ZONE ── */
+.drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.drop-zone:hover { border-color: var(--accent); background: var(--accent-dim); }
+.drop-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+}
+.drop-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+.drop-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--accent-dim);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--accent);
+}
+.status-bar.show { display: flex; }
+
+/* ── FORM SECTION ── */
+.form-section {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 20px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── GRID ── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.col-full { grid-column: 1 / -1; }
+
+/* ── TRANSPORT CHECKBOXES ── */
+.check-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.check-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.check-item:hover { border-color: var(--accent); }
+.check-item input { accent-color: var(--accent); }
+
 </style>
 <body>
 
@@ -1011,6 +1163,10 @@ body::after {
       <!-- Signup -->
       <div class="setup-body" id="signupPane" style="display:none">
         <div class="field">
+          <label>アカウント名</label>
+          <input type="text" id="signupName" placeholder="例: kizuku">
+        </div>
+        <div class="field">
           <label>メールアドレス</label>
           <input type="email" id="signupEmail" placeholder="you@example.com">
         </div>
@@ -1031,7 +1187,7 @@ body::after {
 <div id="appScreen" class="screen">
   <header class="app-header">
     <div class="app-logo">
-      <svg viewBox="0 0 224 56" width="224" height="56" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <svg viewBox="0 0 200 46" width="200" height="46" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
         <text x="0" y="46"
           font-family="'Bebas Neue', sans-serif"
           font-size="38"
@@ -1062,14 +1218,14 @@ body::after {
   <div class="app-body">
     <div class="view-bar">
       <div class="view-tabs">
-        <button class="view-tab active" onclick="switchView('list')">リスト</button>
-        <button class="view-tab" onclick="switchView('calendar')">カレンダー</button>
+        <button class="view-tab" onclick="switchView('list')">リスト</button>
+        <button class="view-tab active" onclick="switchView('calendar')">カレンダー</button>
       </div>
       <button class="btn-add" onclick="openAddModal()">＋ 遠征を追加</button>
     </div>
 
     <!-- List view -->
-    <div id="listView">
+    <div id="listView" style="display:none">
       <div class="concert-list" id="concertList">
         <div class="empty-state">
           <span class="empty-icon">🎤</span>
@@ -1079,7 +1235,7 @@ body::after {
     </div>
 
     <!-- Calendar view -->
-    <div id="calendarView" style="display:none">
+    <div id="calendarView">
       <div class="cal-header">
         <button class="cal-nav" onclick="calMove(-1)">‹</button>
         <div class="cal-month-label" id="calMonthLabel"></div>
@@ -1347,11 +1503,15 @@ async function doLogin() {
     const { data, error } = await supaClient.auth.signInWithPassword({ email, password: pass });
     if (error) {
       if (error.message === 'Email not confirmed') {
-        err.textContent = 'メールアドレスの確認が完了していません。届いた確認メールのリンクをクリックしてから再度ログインしてください。';
+        err.textContent = 'メールアドレスの確認が完了していません。確認メールのリンクをクリックしてから再度ログインしてください。';
       } else if (error.message === 'Invalid login credentials') {
         err.textContent = 'メールアドレスまたはパスワードが正しくありません。';
+      } else if (error.message.includes('rate limit') || error.message.includes('too many')) {
+        err.textContent = 'しばらく時間をおいてから再度お試しください。';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        err.textContent = 'ネットワークエラーです。接続を確認してください。';
       } else {
-        err.textContent = error.message;
+        err.textContent = 'ログインに失敗しました: ' + error.message;
       }
       return;
     }
@@ -1364,21 +1524,37 @@ async function doLogin() {
 
 async function doSignup() {
   if (!ensureSupabase()) return;
+  const name = document.getElementById('signupName').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
   const pass = document.getElementById('signupPass').value;
   const err = document.getElementById('signupErr');
   err.textContent = '';
   err.style.color = '';
 
+  if (!name) { err.textContent = 'アカウント名を入力してください'; return; }
   if (pass.length < 6) { err.textContent = 'パスワードは6文字以上にしてください'; return; }
 
   try {
-    const { data, error } = await supaClient.auth.signUp({ email, password: pass });
-    if (error) { err.textContent = error.message; return; }
+    const { data, error } = await supaClient.auth.signUp({
+      email, password: pass,
+      options: { data: { display_name: name } }
+    });
+    if (error) {
+      if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+        err.textContent = 'このメールアドレスはすでに登録されています。ログインしてください。';
+      } else if (error.message.includes('invalid')) {
+        err.textContent = 'メールアドレスの形式が正しくありません。';
+      } else {
+        err.textContent = 'エラー: ' + error.message;
+      }
+      return;
+    }
+    // アカウント名をlocalStorageに保存
+    saveCfgData({ displayName: name });
     err.style.color = 'var(--green)';
     err.textContent = '✓ 登録完了！確認メールをお送りしました。メール内のリンクをクリックして認証後、ログインしてください。';
   } catch(e) {
-    err.textContent = '接続エラーが発生しました。インターネット接続を確認してください。(' + e.message + ')';
+    err.textContent = '接続エラーが発生しました。インターネット接続を確認してください。';
   }
 }
 
@@ -1402,7 +1578,10 @@ function showScreen(id) {
 
 async function enterApp() {
   showScreen('appScreen');
-  document.getElementById('userEmailLabel').textContent = currentUser.email;
+  // アカウント名を優先、なければメタデータ、なければメール
+  const meta = currentUser.user_metadata || {};
+  const displayName = loadCfg().displayName || meta.display_name || meta.name || currentUser.email.split('@')[0];
+  document.getElementById('userEmailLabel').textContent = displayName;
   await loadConcerts();
   initCalendar();
 }
@@ -1510,10 +1689,14 @@ function renderCalendar() {
     const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dayConcerts = concerts.filter(c => c.concert_date === dateStr);
     const eventsHtml = dayConcerts.map(c =>
-      `<div class="cal-event" onclick="event.stopPropagation();openDetail('${c.id}')">${esc(c.title)}</div>`
+      `<div class="cal-event" onclick="event.stopPropagation();openDetail('${c.id}')">
+        ${esc(c.title)}${c.artist ? ' · ' + esc(c.artist) : ''}${c.venue ? ' @ ' + esc(c.venue) : ''}
+      </div>`
     ).join('');
 
-    html += `<div class="cal-cell${isToday?' today':''}">
+    const cellClick = dayConcerts.length === 1 ? `onclick="openDetail('${dayConcerts[0].id}')"` :
+                     dayConcerts.length > 1  ? `onclick="openDetail('${dayConcerts[0].id}')"` : '';
+    html += `<div class="cal-cell${isToday?' today':''}" ${cellClick} style="${dayConcerts.length>0?'cursor:pointer':''}">
       <span class="cal-day-num">${d}</span>
       ${eventsHtml}
     </div>`;
