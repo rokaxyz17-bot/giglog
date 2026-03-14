@@ -1852,163 +1852,118 @@ function clearForm() {
 async function fetchFromUrl() {
   const url = document.getElementById('concertUrl').value.trim();
   if (!url) { showToast('URLを入力してください', 'err'); return; }
-  const anthKey = getAnthKey();
-  if (!anthKey) {
-    showToast('設定⚙からAnthropicキーを入力してください', 'err');
-    toggleSettings();
-    return;
-  }
 
   document.getElementById('fetchUrlBtn').disabled = true;
   setStatus(true, 'AIがページを解析中...');
 
   const prompt = `以下のURLはライブ・コンサートの公演情報またはチケットページです。
-アクセスして以下の情報をJSONで抽出してください。情報がない場合はnullにしてください。
-時間はHH:MM形式（24時間）で返してください。
-
+URLを参照して以下の情報をJSONのみで返してください。説明文不要。情報がない場合はnull。時間はHH:MM形式（24時間制）。
 URL: ${url}
 
 {
-  "title": "公演・ライブ名",
+  "title": "ライブ名",
   "artist": "アーティスト名",
-  "date": "YYYY-MM-DD",
+  "concert_date": "YYYY-MM-DD",
+  "open_time": "HH:MM",
+  "start_time": "HH:MM",
+  "merch_time": "HH:MM",
+  "tokuten_time": "HH:MM",
   "venue": "会場名",
   "city": "都市名",
-  "open_time": "開場時間 HH:MM",
-  "start_time": "開演時間 HH:MM",
-  "merch_time": "物販開始時間 HH:MM",
-  "tokuten_time": "特典会・握手会開始時間 HH:MM",
-  "ticket_url": "チケット購入URL（このURLと同じまたは別途あれば）",
-  "concert_url": "公演詳細の公式URL"
-}
-
-JSONのみ返してください。`;
+  "ticket_url": "チケットURL",
+  "concert_url": "${url}"
+}`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 800,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: prompt }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0 }
       })
     });
 
-    if (!res.ok) throw new Error(`API ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error('Gemini API ' + res.status + ': ' + errText.slice(0, 100));
+    }
     const data = await res.json();
-    const text = (data.content.find(b => b.type === 'text')?.text) || '';
-    const m = text.match(/\{[\s\S]*\}/);
-    if (m) fillForm(JSON.parse(m[0]), url);
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON形式で返ってきませんでした');
+    const info = JSON.parse(jsonMatch[0]);
+    fillForm(info);
     setStatus(false);
-    showToast('読み取り完了！内容を確認してください', 'ok');
+    showToast('✓ 読み取り完了', 'ok');
   } catch(e) {
-    setStatus(false, null, e.message);
+    setStatus(false);
     showToast('読み取りエラー: ' + e.message, 'err');
   } finally {
     document.getElementById('fetchUrlBtn').disabled = false;
   }
 }
 
-// ── IMAGE FETCH ───────────────────────────────────────────
-const dz = document.getElementById('dropZone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => {
-  e.preventDefault();
-  dz.classList.remove('drag-over');
-  const f = e.dataTransfer.files[0];
-  if (f?.type.startsWith('image/')) handleImg(f);
-});
 
 async function handleImg(file) {
-  const anthKey = getAnthKey();
-  if (!anthKey) {
-    showToast('設定⚙からAnthropicキーを入力してください', 'err');
-    toggleSettings();
-    return;
-  }
-
   setStatus(true, 'AIが画像を解析中...');
-  dz.querySelector('.drop-text').textContent = `📎 ${file.name}`;
+  const dz = document.getElementById('dropZone');
+  dz.querySelector('.drop-text').textContent = '📎 ' + file.name;
 
-  const base64 = await new Promise(r => {
+  const base64 = await new Promise((res, rej) => {
     const rd = new FileReader();
-    rd.onload = e => r(e.target.result.split(',')[1]);
+    rd.onload = e => res(e.target.result.split(',')[1]);
+    rd.onerror = () => rej(new Error('読み込み失敗'));
     rd.readAsDataURL(file);
   });
 
   const mediaType = file.type || 'image/jpeg';
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 800,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: `このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONで抽出してください。
-情報がない場合はnull。時間はHH:MM形式（24時間制）。
-
+  const prompt = `このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。時間はHH:MM形式（24時間制）。
 {
-  "title": "公演・ライブ名",
+  "title": "ライブ名",
   "artist": "アーティスト名",
-  "date": "YYYY-MM-DD",
+  "concert_date": "YYYY-MM-DD",
+  "open_time": "HH:MM",
+  "start_time": "HH:MM",
+  "merch_time": "HH:MM",
+  "tokuten_time": "HH:MM",
   "venue": "会場名",
   "city": "都市名",
-  "open_time": "開場 HH:MM",
-  "start_time": "開演 HH:MM",
-  "merch_time": "物販開始 HH:MM",
-  "tokuten_time": "特典会・握手会 HH:MM"
-}
+  "ticket_url": null,
+  "concert_url": null
+}`;
 
-JSONのみ返してください。` }
+  try {
+    const res = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mediaType, data: base64 } },
+            { text: prompt }
           ]
-        }]
+        }],
+        generationConfig: { temperature: 0 }
       })
     });
 
-    if (!res.ok) throw new Error(`API ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error('Gemini API ' + res.status + ': ' + errText.slice(0, 100));
+    }
     const data = await res.json();
-    const text = data.content.find(b => b.type === 'text')?.text || '';
-    const m = text.match(/\{[\s\S]*\}/);
-    if (m) fillForm(JSON.parse(m[0]));
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON形式で返ってきませんでした');
+    const info = JSON.parse(jsonMatch[0]);
+    fillForm(info);
     setStatus(false);
-    showToast('読み取り完了！', 'ok');
+    showToast('✓ 読み取り完了', 'ok');
   } catch(e) {
-    setStatus(false, null, e.message);
-    showToast('エラー: ' + e.message, 'err');
+    setStatus(false);
+    showToast('読み取りエラー: ' + e.message, 'err');
   }
-}
-
-function fillForm(d, sourceUrl) {
-  if (d.title) document.getElementById('fTitle').value = d.title;
-  if (d.artist) document.getElementById('fArtist').value = d.artist;
-  if (d.date) document.getElementById('fDate').value = d.date;
-  if (d.venue) document.getElementById('fVenue').value = d.venue;
-  if (d.city) document.getElementById('fCity').value = d.city;
-  if (d.open_time) document.getElementById('fOpenTime').value = d.open_time;
-  if (d.start_time) document.getElementById('fStartTime').value = d.start_time;
-  if (d.merch_time) document.getElementById('fMerchTime').value = d.merch_time;
-  if (d.tokuten_time) document.getElementById('fTokutenTime').value = d.tokuten_time;
-  if (d.ticket_url) document.getElementById('fTicketUrl').value = d.ticket_url;
-  if (d.concert_url) document.getElementById('fConcertUrl').value = d.concert_url;
-  else if (sourceUrl) document.getElementById('fConcertUrl').value = sourceUrl;
 }
 
 // ── SUBMIT ────────────────────────────────────────────────
