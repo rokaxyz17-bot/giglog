@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ExDATE — ライブスケジュール管理</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,900;1,700;1,900&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -29,7 +29,7 @@
   --red-dim: rgba(240,43,90,0.1);
   --sans: 'Noto Sans JP', sans-serif;
   --mono: 'Space Mono', monospace;
-  --cond: 'Barlow Condensed', sans-serif;
+  --cond: 'Big Shoulders Display', sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -963,22 +963,44 @@ body::after {
   <div class="setup-wrap">
     <div class="setup-logo">
       <div class="logo-svg-wrap">
-        <svg viewBox="0 0 268 64" width="268" height="64" xmlns="http://www.w3.org/2000/svg">
-          <!-- "Ex" outline only -->
-          <text x="2" y="56"
-            font-family="'Barlow Condensed',sans-serif"
-            font-weight="900"
-            font-size="64"
-            letter-spacing="-3"
+        <!--
+          ExWHYZ-style: Bebas Neue (all-caps condensed), Ex=outline, DATE=filled
+          Walking person pictogram on the left — pop/bold style
+        -->
+        <svg viewBox="0 0 360 90" width="360" height="90" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- ── WALKING PERSON PICTOGRAM ── -->
+          <!-- head -->
+          <circle cx="22" cy="10" r="8" fill="#1a5cff"/>
+          <!-- body -->
+          <line x1="22" y1="18" x2="22" y2="52" stroke="#1a5cff" stroke-width="6" stroke-linecap="round"/>
+          <!-- left arm (forward) -->
+          <line x1="22" y1="28" x2="8" y2="42" stroke="#1a5cff" stroke-width="6" stroke-linecap="round"/>
+          <!-- right arm (back) -->
+          <line x1="22" y1="28" x2="36" y2="38" stroke="#1a5cff" stroke-width="6" stroke-linecap="round"/>
+          <!-- left leg (back) -->
+          <line x1="22" y1="52" x2="10" y2="72" stroke="#1a5cff" stroke-width="6" stroke-linecap="round"/>
+          <!-- right leg (forward stride) -->
+          <line x1="22" y1="52" x2="34" y2="68" stroke="#1a5cff" stroke-width="6" stroke-linecap="round"/>
+          <!-- right foot -->
+          <line x1="34" y1="68" x2="44" y2="72" stroke="#1a5cff" stroke-width="5" stroke-linecap="round"/>
+          <!-- left foot -->
+          <line x1="10" y1="72" x2="4"  y2="76" stroke="#1a5cff" stroke-width="5" stroke-linecap="round"/>
+
+          <!-- ── ExDATE TEXT ── -->
+          <!-- "Ex" — outline only -->
+          <text x="52" y="78"
+            font-family="'Bebas Neue', sans-serif"
+            font-size="82"
+            letter-spacing="-2"
             fill="none"
             stroke="#1a5cff"
-            stroke-width="2.5">Ex</text>
-          <!-- "DATE" solid fill -->
-          <text x="76" y="56"
-            font-family="'Barlow Condensed',sans-serif"
-            font-weight="900"
-            font-size="64"
-            letter-spacing="-3"
+            stroke-width="2.8">Ex</text>
+          <!-- "DATE" — solid fill -->
+          <text x="148" y="78"
+            font-family="'Bebas Neue', sans-serif"
+            font-size="82"
+            letter-spacing="-2"
             fill="#1a5cff">DATE</text>
         </svg>
       </div>
@@ -1028,23 +1050,17 @@ body::after {
 <div id="appScreen" class="screen">
   <header class="app-header">
     <div class="app-logo">
-      <svg viewBox="0 0 152 34" width="152" height="34" xmlns="http://www.w3.org/2000/svg">
-        <!-- "Ex" outline -->
-        <text x="1" y="28"
-          font-family="'Barlow Condensed',sans-serif"
-          font-weight="900"
-          font-size="34"
-          letter-spacing="-2"
-          fill="none"
-          stroke="#1a5cff"
-          stroke-width="1.5">Ex</text>
-        <!-- "DATE" filled -->
-        <text x="41" y="28"
-          font-family="'Barlow Condensed',sans-serif"
-          font-weight="900"
-          font-size="34"
-          letter-spacing="-2"
-          fill="#1a5cff">DATE</text>
+      <svg viewBox="0 0 200 42" width="200" height="42" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="5"  r="4"   fill="#1a5cff"/>
+        <line x1="10" y1="9"  x2="10" y2="24" stroke="#1a5cff" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="14" x2="4"  y2="20" stroke="#1a5cff" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="14" x2="16" y2="19" stroke="#1a5cff" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="24" x2="5"  y2="34" stroke="#1a5cff" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="24" x2="15" y2="32" stroke="#1a5cff" stroke-width="3" stroke-linecap="round"/>
+        <line x1="15" y1="32" x2="20" y2="35" stroke="#1a5cff" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="5"  y1="34" x2="2"  y2="37" stroke="#1a5cff" stroke-width="2.5" stroke-linecap="round"/>
+        <text x="25" y="36" font-family="'Bebas Neue', sans-serif" font-size="38" letter-spacing="-1" fill="none" stroke="#1a5cff" stroke-width="1.5">Ex</text>
+        <text x="72" y="36" font-family="'Bebas Neue', sans-serif" font-size="38" letter-spacing="-1" fill="#1a5cff">DATE</text>
       </svg>
     </div>
     <div class="header-center"></div>
