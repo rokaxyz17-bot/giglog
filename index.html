@@ -90,10 +90,15 @@ body::after {
   text-align: center;
   margin-bottom: 40px;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .logo-svg-wrap {
-  display: inline-block;
+  display: block;
+  width: 100%;
+  max-width: 410px;
   position: relative;
 }
 
@@ -1192,7 +1197,7 @@ body::after {
   <div class="setup-wrap">
     <div class="setup-logo">
       <div class="logo-svg-wrap">
-        <svg viewBox="0 0 410 130" width="410" height="130" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <svg viewBox="0 0 410 130" width="100%" style="max-width:410px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
           <!-- GiG outline -->
           <text x="0" y="104"
             font-family="'Barlow Condensed', sans-serif"
@@ -1780,10 +1785,10 @@ function renderCalendar() {
     let eventsHtml = '';
     dayConcerts.forEach(function(c) {
       const label = esc(c.title) + (c.artist ? ' · ' + esc(c.artist) : '') + (c.venue ? ' @ ' + esc(c.venue) : '');
-      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail('' + c.id + '')">' + label + '</div>';
+      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')">' + label + '</div>';
     });
 
-    const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail('' + dayConcerts[0].id + '')" style="cursor:pointer"' : '';
+    const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail(\'' + dayConcerts[0].id + '\')" style="cursor:pointer"' : '';
     out += '<div class="cal-cell' + (isToday ? ' today' : '') + '"' + clickAttr + '>';
     out += '<span class="cal-day-num">' + d + '</span>';
     out += eventsHtml;
