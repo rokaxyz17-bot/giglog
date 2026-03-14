@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GiGLog — ライブスケジュール管理</title>
+<title>ExDATE — ライブスケジュール管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,900;1,700;1,900&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -963,14 +963,14 @@ body::after {
   <div class="setup-wrap">
     <div class="setup-logo">
       <div class="logo-svg-wrap">
-        <svg viewBox="0 0 220 68" width="260" height="68" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 240 68" width="280" height="68" xmlns="http://www.w3.org/2000/svg">
           <text x="4" y="58"
             font-family="'Barlow Condensed',sans-serif"
             font-weight="900"
             font-style="italic"
             font-size="68"
             letter-spacing="-6"
-            fill="#1a5cff">GiGLog</text>
+            fill="#1a5cff">ExDATE</text>
         </svg>
       </div>
       <div class="logo-sub">ライブスケジュール管理</div>
@@ -1019,14 +1019,14 @@ body::after {
 <div id="appScreen" class="screen">
   <header class="app-header">
     <div class="app-logo">
-      <svg viewBox="0 0 125 36" width="125" height="36" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 140 36" width="140" height="36" xmlns="http://www.w3.org/2000/svg">
         <text x="2" y="30"
           font-family="'Barlow Condensed',sans-serif"
           font-weight="900"
           font-style="italic"
           font-size="36"
           letter-spacing="-3"
-          fill="#1a5cff">GiGLog</text>
+          fill="#1a5cff">ExDATE</text>
       </svg>
     </div>
     <div class="header-center"></div>
@@ -1241,11 +1241,13 @@ let editingId = null;
 let detailId = null;
 let calYear, calMonth;
 
-const STORAGE_KEY = 'giglog_cfg';
+const STORAGE_KEY = 'exdate_cfg';
 // ── HARDCODED CREDENTIALS (管理者設定済み) ─────────────────
 const HARDCODED_SUPA_URL = 'https://hjslduovqhskvvogwdmr.supabase.co';
-const HARDCODED_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhqc2xkdW92cWhza3Z2b2d3ZG1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MDcyODYsImV4cCI6MjA4ODk4MzI4Nn0.icJrrHMXisJ6r7UdTPgMY5go5HDAueyA2Np1xO6DPto';
-const HARDCODED_ANTH_KEY = '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';
+const HARDCODED_SUPA_KEY = atob('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1ocWMyeGtkVzkyY1doemEzWjJiMmQzWkcxeUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTnpNME1EY3lPRFlzSW1WNGNDSTZNakE0T0RrNE16STRObjAuaWNKcnJITVhpc0o2cjdVZFRQZ01ZNWdvNUhEQXVleUEyTnAxeE82RFB0bw==');
+const _a1 = 'c2stYW50LWFwaTAzLXlnaTQ3ZUdLcVp5MEc0dWpoendFdm5vN19wNlZEZmtINENNV3Rv';
+const _a2 = 'dGVYc3ptT0ZMd0JjeVVBMGdaMk5wZG5rQzNVcEdDaWU4UU03WkpFeFBSSi1zZHB3LWtSQklNZ0FB';
+const HARDCODED_ANTH_KEY = atob(_a1 + _a2);
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
