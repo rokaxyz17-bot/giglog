@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GiGLog — ライブスケジュール管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #0a0a0c;
+  --bg2: #0f0f12;
+  --surface: #141418;
+  --surface2: #1a1a20;
+  --surface3: #22222a;
+  --border: #2a2a36;
+  --border2: #363644;
+  --accent: #e8365d;
+  --accent2: #ff7096;
+  --accent-dim: rgba(232,54,93,0.12);
+  --gold: #c9a84c;
+  --text: #f0eff6;
+  --text-muted: #8a8a9e;
+  --text-dim: #4a4a5e;
+  --green: #3ecf8e;
+  --green-dim: rgba(62,207,142,0.1);
+  --serif: 'Cormorant Garamond', serif;
+  --sans: 'Zen Kaku Gothic New', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NOISE OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── SETUP SCREEN ── */
+#setupScreen {
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.setup-wrap {
+  width: 100%;
+  max-width: 480px;
+}
+
+.setup-logo {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.logo-title {
+  font-family: var(--serif);
+  font-size: 52px;
+  font-weight: 300;
+  letter-spacing: 12px;
+  color: var(--text);
+  line-height: 1;
+}
+
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.setup-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.setup-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.setup-tab {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  background: none;
+  border: none;
+}
+
+.setup-tab.active {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.setup-body { padding: 28px; }
+
+.setup-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+}
+
+.setup-note a { color: var(--accent2); text-decoration: none; }
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+
+.field label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+input, select, textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 300;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input::placeholder, textarea::placeholder { color: var(--text-dim); }
+select option { background: var(--surface2); }
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 13px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  margin-top: 6px;
+}
+
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:active { transform: scale(0.99); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.err-msg {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 10px;
+  min-height: 18px;
+  text-align: center;
+}
+
+.setup-sql {
+  margin-top: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sql-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.copy-sql-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-sql-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+pre.sql-code {
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ── APP SHELL ── */
+#appScreen { flex-direction: column; }
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,12,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  gap: 20px;
+}
+
+.app-logo {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 6px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.app-logo span { color: var(--accent); }
+
+.header-center { flex: 1; }
+
+.user-email {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.btn-logout {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.btn-logout:hover { border-color: var(--accent); color: var(--accent); }
+
+.app-body {
+  flex: 1;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+/* ── VIEW SWITCHER ── */
+.view-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.view-tabs {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.view-tab {
+  padding: 8px 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.view-tab.active { color: var(--accent); background: var(--accent-dim); }
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  border: none;
+  border-radius: 7px;
+  color: white;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.btn-add:hover { opacity: 0.85; }
+
+/* ── CONCERT CARDS (LIST) ── */
+.concert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+
+.empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+  opacity: 0.4;
+}
+
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+.concert-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.concert-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+
+.concert-card-inner {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 0;
+}
+
+.card-date-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 12px;
+  background: var(--surface2);
+  border-right: 1px solid var(--border);
+}
+
+.card-month {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.card-day {
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1;
+  margin: 2px 0;
+}
+
+.card-weekday {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.card-body-col {
+  padding: 18px 20px;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.card-artist {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent2);
+  margin-bottom: 10px;
+}
+
+.card-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.time-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.time-chip.merch { border-color: rgba(201,168,76,0.3); color: var(--gold); }
+.time-chip.tokuten { border-color: rgba(232,54,93,0.3); color: var(--accent2); }
+
+.card-meta-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px 18px 18px 8px;
+  gap: 8px;
+}
+
+.venue-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: right;
+  max-width: 120px;
+  line-height: 1.4;
+}
+
+.transport-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.transport-tag {
+  font-size: 11px;
+  background: var(--surface2);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* ── CALENDAR VIEW ── */
+.calendar-wrap { }
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cal-nav {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-nav:hover { border-color: var(--accent); color: var(--accent); }
+
+.cal-month-label {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cal-weekday {
+  background: var(--surface2);
+  padding: 10px 4px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+.cal-cell {
+  background: var(--surface);
+  min-height: 88px;
+  padding: 8px;
+  position: relative;
+  vertical-align: top;
+}
+
+.cal-cell.other-month { background: var(--bg2); }
+.cal-cell.today { background: var(--surface2); }
+
+.cal-day-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.cal-cell.today .cal-day-num {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.cal-event {
+  background: var(--accent-dim);
+  border-left: 2px solid var(--accent);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-size: 10px;
+  color: var(--text);
+  cursor: pointer;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.15s;
+}
+
+.cal-event:hover { background: rgba(232,54,93,0.25); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  animation: slideUp 0.25s ease;
+  margin: auto;
+}
+
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.modal-close:hover { color: var(--text); }
+
+.modal-body { padding: 24px; }
+
+/* Add concert steps */
+.add-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.add-step-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 18px;
+}
+
+.add-step-btn span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.add-step-btn:hover, .add-step-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.add-step-btn.active span { color: var(--accent); }
+
+.input-zone { display: none; margin-bottom: 20px; }
+.input-zone.visible { display: block; }
+
+.url-row {
+  display: flex;
+  gap: 10px;
+}
+
+.url-row input { flex: 1; }
+
+.btn-fetch {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 0 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-fetch:hover { border-color: var(--accent); color: var(--accent); }
+.btn-fetch:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.drop-zone {
+  position: relative;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.drop-zone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.drop-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+.drop-text { font-size: 13px; color: var(--text-muted); }
+
+/* Status bar */
+.status-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.status-bar.visible { display: flex; }
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.status-ok { color: var(--green); }
+.status-err { color: var(--accent); }
+
+/* Form grid */
+.form-section {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin: 20px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.col-full { grid-column: 1 / -1; }
+
+.time-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+
+.transport-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: white; }
+.chip input { display: none; }
+
+/* Modal footer */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-submit {
+  background: var(--green);
+  border: none;
+  border-radius: 6px;
+  color: #0a0a0c;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px 24px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-submit:hover { opacity: 0.85; }
+.btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Detail modal */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+.detail-item label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.detail-item .val {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.detail-item .val a {
+  color: var(--accent2);
+  text-decoration: none;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.detail-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.dtime {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 60px;
+}
+
+.dtime-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.dtime-val {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1;
+}
+
+.dtime.merch .dtime-val { color: var(--gold); }
+.dtime.tokuten .dtime-val { color: var(--accent2); }
+
+.btn-danger {
+  background: none;
+  border: 1px solid rgba(232,54,93,0.3);
+  border-radius: 6px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.btn-danger:hover { background: var(--accent-dim); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px 22px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0;
+  transition: all 0.25s ease;
+  z-index: 9000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.toast-dot.ok { background: var(--green); }
+.toast-dot.err { background: var(--accent); }
+
+/* Settings panel */
+.settings-panel {
+  position: fixed;
+  top: 60px;
+  right: 0;
+  width: 360px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 20px;
+  z-index: 200;
+  display: none;
+  border-radius: 0 0 0 12px;
+}
+
+.settings-panel.open { display: block; }
+
+.settings-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.btn-settings {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-settings:hover { border-color: var(--border2); color: var(--text-muted); }
+
+@media (max-width: 640px) {
+  .concert-card-inner { grid-template-columns: 70px 1fr; }
+  .card-meta-col { display: none; }
+  .time-grid { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .cal-cell { min-height: 60px; }
+  .cal-event { font-size: 9px; }
+  .settings-panel { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── SETUP / AUTH SCREEN ── -->
+<div id="setupScreen" class="screen active">
+  <div class="setup-wrap">
+    <div class="setup-logo">
+      <div class="logo-title">GiGLog</div>
+      <div class="logo-sub">ライブスケジュール管理</div>
+    </div>
+
+    <div class="setup-card">
+      <div class="setup-tabs">
+        <button class="setup-tab active" onclick="switchAuthTab('login')">ログイン</button>
+        <button class="setup-tab" onclick="switchAuthTab('signup')">新規登録</button>
+      </div>
+
+      <!-- Login -->
+      <div class="setup-body" id="loginPane">
+        <div class="field">
+          <label>メールアドレス</label>
+          <input type="email" id="loginEmail" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label>パスワード</label>
+          <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div class="err-msg" id="loginErr"></div>
+        <button class="btn-primary" onclick="doLogin()">ログイン</button>
+      </div>
+
+      <!-- Signup -->
+      <div class="setup-body" id="signupPane" style="display:none">
+        <div class="field">
+          <label>メールアドレス</label>
+          <input type="email" id="signupEmail" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label>パスワード（6文字以上）</label>
+          <input type="password" id="signupPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignup()">
+        </div>
+        <div class="err-msg" id="signupErr"></div>
+        <button class="btn-primary" onclick="doSignup()">アカウント作成</button>
+      </div>
+
+      <!-- Config -->
+    </div>
+  </div>
+</div>
+
+<!-- ── APP SCREEN ── -->
+<div id="appScreen" class="screen">
+  <header class="app-header">
+    <div class="app-logo">GiGLog</div>
+    <div class="header-center"></div>
+    <div class="user-email" id="userEmailLabel"></div>
+    <button class="btn-settings" onclick="toggleSettings()" title="設定" style="display:none">⚙</button>
+    <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+  </header>
+
+  <!-- Settings panel (hidden - keys are hardcoded) -->
+  <div class="settings-panel" id="settingsPanel" style="display:none"></div>
+
+  <div class="app-body">
+    <div class="view-bar">
+      <div class="view-tabs">
+        <button class="view-tab active" onclick="switchView('list')">リスト</button>
+        <button class="view-tab" onclick="switchView('calendar')">カレンダー</button>
+      </div>
+      <button class="btn-add" onclick="openAddModal()">＋ 遠征を追加</button>
+    </div>
+
+    <!-- List view -->
+    <div id="listView">
+      <div class="concert-list" id="concertList">
+        <div class="empty-state">
+          <span class="empty-icon">🎤</span>
+          <p>まだ遠征が登録されていません<br>「遠征を追加」から登録しましょう</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar view -->
+    <div id="calendarView" style="display:none">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calMove(-1)">‹</button>
+        <div class="cal-month-label" id="calMonthLabel"></div>
+        <button class="cal-nav" onclick="calMove(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD/EDIT MODAL ── -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">遠征を追加</div>
+      <button class="modal-close" onclick="closeModal('addModal')">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Input method selector -->
+      <div class="add-steps">
+        <button class="add-step-btn active" id="stepUrl" onclick="setInputMode('url')">
+          🔗<span>URL</span>
+        </button>
+        <button class="add-step-btn" id="stepImg" onclick="setInputMode('img')">
+          📸<span>スクショ</span>
+        </button>
+        <button class="add-step-btn" id="stepManual" onclick="setInputMode('manual')">
+          ✏️<span>手動</span>
+        </button>
+      </div>
+
+      <!-- URL input -->
+      <div class="input-zone visible" id="zoneUrl">
+        <div class="url-row">
+          <input type="url" id="concertUrl" placeholder="チケット・公演ページのURL…">
+          <button class="btn-fetch" id="fetchUrlBtn" onclick="fetchFromUrl()">AI読み取り</button>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-dim)">
+          イープラス・ぴあ・ローチケ・アーティスト公式HPなど
+        </div>
+      </div>
+
+      <!-- Image upload -->
+      <div class="input-zone" id="zoneImg">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="imgFile" accept="image/*" onchange="handleImg(this.files[0])">
+          <span class="drop-icon">📸</span>
+          <div class="drop-text">チケット・公演スクショをドロップ<br>または タップして選択</div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="status-bar" id="statusBar">
+        <div class="spinner" id="spinner"></div>
+        <span id="statusText">AIが解析中...</span>
+      </div>
+
+      <!-- Form -->
+      <div class="form-section">基本情報</div>
+      <div class="grid-2">
+        <div class="field col-full">
+          <label>ライブ名 *</label>
+          <input type="text" id="fTitle" placeholder="例：ExWHYZ 3rd Anniversary Live">
+        </div>
+        <div class="field col-full">
+          <label>アーティスト</label>
+          <input type="text" id="fArtist" placeholder="例：ExWHYZ">
+        </div>
+        <div class="field">
+          <label>公演日</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="field">
+          <label>宿泊</label>
+          <select id="fStay">
+            <option value="">未定</option>
+            <option value="日帰り">日帰り</option>
+            <option value="1泊">1泊</option>
+            <option value="2泊">2泊</option>
+            <option value="3泊以上">3泊以上</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>会場</label>
+          <input type="text" id="fVenue" placeholder="例：Zepp Haneda">
+        </div>
+        <div class="field">
+          <label>場所（都市）</label>
+          <input type="text" id="fCity" placeholder="例：東京">
+        </div>
+      </div>
+
+      <div class="form-section">時間情報</div>
+      <div class="time-grid">
+        <div class="field">
+          <label>開場</label>
+          <input type="time" id="fOpenTime">
+        </div>
+        <div class="field">
+          <label>開演</label>
+          <input type="time" id="fStartTime">
+        </div>
+        <div class="field">
+          <label>🛍 物販開始</label>
+          <input type="time" id="fMerchTime">
+        </div>
+        <div class="field">
+          <label>🌟 特典会</label>
+          <input type="time" id="fTokutenTime">
+        </div>
+      </div>
+
+      <div class="form-section">その他</div>
+      <div class="grid-2">
+        <div class="field col-full">
+          <label>交通手段</label>
+          <div class="transport-chips" id="transportChips">
+            <label class="chip" onclick="toggleChip(this)"><input type="checkbox" value="新幹線">🚅 新幹線</label>
+            <label class="chip" onclick="toggleChip(this)"><input type="checkbox" value="飛行機">✈ 飛行機</label>
+            <label class="chip" onclick="toggleChip(this)"><input type="checkbox" value="在来線">🚃 在来線</label>
+            <label class="chip" onclick="toggleChip(this)"><input type="checkbox" value="バス">🚌 バス</label>
+            <label class="chip" onclick="toggleChip(this)"><input type="checkbox" value="車">🚗 車</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>同行者</label>
+          <input type="text" id="fCompanion" placeholder="@friend">
+        </div>
+        <div class="field">
+          <label>チケットURL</label>
+          <input type="url" id="fTicketUrl" placeholder="https://...">
+        </div>
+        <div class="field col-full">
+          <label>公演詳細URL</label>
+          <input type="url" id="fConcertUrl" placeholder="公演の公式ページ">
+        </div>
+        <div class="field col-full">
+          <label>メモ</label>
+          <textarea id="fMemo" rows="2" style="resize:vertical" placeholder="グッズ予定・セトリ予想など"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-submit" id="submitBtn" onclick="submitConcert()">
+        <span>✓</span> <span id="submitLabel">登録する</span>
+      </button>
+      <button class="btn-secondary" onclick="closeModal('addModal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL MODAL ── -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="detailTitle">—</div>
+      <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="editConcert()">編集</button>
+      <button class="btn-danger" onclick="deleteConcert()">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-dot" id="toastDot"></div>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ── GLOBALS ─────────────────────────────────────────────
+let supaClient = null;
+let currentUser = null;
+let concerts = [];
+let editingId = null;
+let detailId = null;
+let calYear, calMonth;
+
+const STORAGE_KEY = 'giglog_cfg';
+// ── HARDCODED CREDENTIALS (管理者設定済み) ─────────────────
+const HARDCODED_SUPA_URL = 'https://hjslduovqhskvvogwdmr.supabase.co';
+const HARDCODED_SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhqc2xkdW92cWhza3Z2b2d3ZG1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MDcyODYsImV4cCI6MjA4ODk4MzI4Nn0.icJrrHMXisJ6r7UdTPgMY5go5HDAueyA2Np1xO6DPto';
+const HARDCODED_ANTH_KEY = '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';
+const WEEKDAYS = ['日','月','火','水','木','金','土'];
+const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+// ── CONFIG ───────────────────────────────────────────────
+function loadCfg() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveCfgData(data) {
+  const existing = loadCfg();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...existing, ...data }));
+}
+
+function getAnthKey() {
+  return HARDCODED_ANTH_KEY;
+}
+
+// ── SUPABASE INIT ─────────────────────────────────────────
+function initSupabase(url, key) {
+  try {
+    supaClient = supabase.createClient(url, key);
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+// ── SETUP / AUTH ──────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
+  const tabs = ['login','signup'];
+  const idx = tabs.indexOf(tab);
+  if (idx >= 0) document.querySelectorAll('.setup-tab')[idx].classList.add('active');
+  document.getElementById('loginPane').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('signupPane').style.display = tab === 'signup' ? '' : 'none';
+}
+
+async function saveConfig() {
+  const url = document.getElementById('cfgSupaUrl').value.trim();
+  const key = document.getElementById('cfgSupaKey').value.trim();
+  const anth = document.getElementById('cfgAnthKey').value.trim();
+  const err = document.getElementById('configErr');
+
+  if (!url || !key) { err.textContent = 'SupabaseのURLとKeyは必須です'; return; }
+
+  if (!initSupabase(url, key)) {
+    err.textContent = '接続に失敗しました。URLとKeyを確認してください';
+    return;
+  }
+
+  try {
+    const { error } = await supaClient.from('concerts').select('id').limit(1);
+    if (error && error.code !== 'PGRST116') {
+      err.textContent = 'テーブルが見つかりません。SQLを実行してください: ' + error.message;
+      return;
+    }
+    saveCfgData({ supaUrl: url, supaKey: key, anthKey: anth });
+    err.style.color = 'var(--green)';
+    err.textContent = '✓ 接続成功！ログインしてください';
+    setTimeout(() => switchAuthTab('login'), 1500);
+  } catch(e) {
+    err.textContent = 'エラー: ' + e.message;
+  }
+}
+
+async function doLogin() {
+  if (!ensureSupabase()) return;
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.textContent = '';
+  err.style.color = '';
+
+  try {
+    const { data, error } = await supaClient.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+      if (error.message === 'Email not confirmed') {
+        err.textContent = 'メールアドレスの確認が完了していません。届いた確認メールのリンクをクリックしてから再度ログインしてください。';
+      } else if (error.message === 'Invalid login credentials') {
+        err.textContent = 'メールアドレスまたはパスワードが正しくありません。';
+      } else {
+        err.textContent = error.message;
+      }
+      return;
+    }
+    currentUser = data.user;
+    enterApp();
+  } catch(e) {
+    err.textContent = '接続エラーが発生しました。インターネット接続を確認してください。(' + e.message + ')';
+  }
+}
+
+async function doSignup() {
+  if (!ensureSupabase()) return;
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPass').value;
+  const err = document.getElementById('signupErr');
+  err.textContent = '';
+  err.style.color = '';
+
+  if (pass.length < 6) { err.textContent = 'パスワードは6文字以上にしてください'; return; }
+
+  try {
+    const { data, error } = await supaClient.auth.signUp({ email, password: pass });
+    if (error) { err.textContent = error.message; return; }
+    err.style.color = 'var(--green)';
+    err.textContent = '✓ 登録完了！確認メールをお送りしました。メール内のリンクをクリックして認証後、ログインしてください。';
+  } catch(e) {
+    err.textContent = '接続エラーが発生しました。インターネット接続を確認してください。(' + e.message + ')';
+  }
+}
+
+async function doLogout() {
+  await supaClient.auth.signOut();
+  currentUser = null;
+  concerts = [];
+  showScreen('setupScreen');
+}
+
+function ensureSupabase() {
+  if (!supaClient) initSupabase(HARDCODED_SUPA_URL, HARDCODED_SUPA_KEY);
+  return true;
+}
+
+// ── APP ───────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function enterApp() {
+  showScreen('appScreen');
+  document.getElementById('userEmailLabel').textContent = currentUser.email;
+  await loadConcerts();
+  initCalendar();
+}
+
+function toggleSettings() {
+  document.getElementById('settingsPanel').classList.toggle('open');
+}
+
+function saveSettings() {
+  // no-op (keys are hardcoded)
+}
+
+// ── CONCERT DATA ──────────────────────────────────────────
+async function loadConcerts() {
+  const { data, error } = await supaClient
+    .from('concerts')
+    .select('*')
+    .order('concert_date', { ascending: true });
+
+  if (error) { showToast('読み込みエラー: ' + error.message, 'err'); return; }
+  concerts = data || [];
+  renderList();
+  renderCalendar();
+}
+
+function renderList() {
+  const el = document.getElementById('concertList');
+  if (!concerts.length) {
+    el.innerHTML = `<div class="empty-state">
+      <span class="empty-icon">🎤</span>
+      <p>まだ遠征が登録されていません<br>「遠征を追加」から登録しましょう</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = concerts.map(c => {
+    const d = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
+    const monthStr = d ? `${d.getMonth()+1}月` : '—';
+    const dayStr = d ? d.getDate() : '—';
+    const wdStr = d ? WEEKDAYS[d.getDay()] : '';
+
+    const times = [];
+    if (c.open_time) times.push(`<div class="time-chip">🚪 ${c.open_time.slice(0,5)}</div>`);
+    if (c.start_time) times.push(`<div class="time-chip">▶ ${c.start_time.slice(0,5)}</div>`);
+    if (c.merch_time) times.push(`<div class="time-chip merch">🛍 ${c.merch_time.slice(0,5)}</div>`);
+    if (c.tokuten_time) times.push(`<div class="time-chip tokuten">🌟 ${c.tokuten_time.slice(0,5)}</div>`);
+
+    const transport = (c.transport || []).join(' ');
+
+    return `<div class="concert-card" onclick="openDetail('${c.id}')">
+      <div class="concert-card-inner">
+        <div class="card-date-col">
+          <div class="card-month">${monthStr}</div>
+          <div class="card-day">${dayStr}</div>
+          <div class="card-weekday">${wdStr}</div>
+        </div>
+        <div class="card-body-col">
+          <div class="card-title">${esc(c.title)}</div>
+          ${c.artist ? `<div class="card-artist">${esc(c.artist)}</div>` : ''}
+          <div class="card-times">${times.join('')}</div>
+        </div>
+        <div class="card-meta-col">
+          <div class="venue-tag">${esc(c.venue||'')}${c.city ? '<br>'+esc(c.city) : ''}</div>
+          ${transport ? `<div class="transport-tags">${(c.transport||[]).map(t=>`<span class="transport-tag">${t}</span>`).join('')}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CALENDAR ─────────────────────────────────────────────
+function initCalendar() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+}
+
+function calMove(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  if (!document.getElementById('calGrid')) return;
+  document.getElementById('calMonthLabel').textContent = `${calYear}年 ${MONTHS_JP[calMonth]}`;
+
+  const grid = document.getElementById('calGrid');
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date();
+
+  // Weekday headers
+  let html = WEEKDAYS.map(d => `<div class="cal-weekday">${d}</div>`).join('');
+
+  // Blank cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-cell other-month"></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = today.getFullYear() === calYear && today.getMonth() === calMonth && today.getDate() === d;
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayConcerts = concerts.filter(c => c.concert_date === dateStr);
+    const eventsHtml = dayConcerts.map(c =>
+      `<div class="cal-event" onclick="event.stopPropagation();openDetail('${c.id}')">${esc(c.title)}</div>`
+    ).join('');
+
+    html += `<div class="cal-cell${isToday?' today':''}">
+      <span class="cal-day-num">${d}</span>
+      ${eventsHtml}
+    </div>`;
+  }
+
+  // Fill remaining cells
+  const total = firstDay + daysInMonth;
+  const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 0; i < remainder; i++) html += `<div class="cal-cell other-month"></div>`;
+
+  grid.innerHTML = html;
+}
+
+function switchView(v) {
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view-tab')[v === 'list' ? 0 : 1].classList.add('active');
+  document.getElementById('listView').style.display = v === 'list' ? '' : 'none';
+  document.getElementById('calendarView').style.display = v === 'calendar' ? '' : 'none';
+}
+
+// ── ADD MODAL ────────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  clearForm();
+  document.getElementById('modalTitle').textContent = '遠征を追加';
+  document.getElementById('submitLabel').textContent = '登録する';
+  setInputMode('url');
+  document.getElementById('addModal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function setInputMode(mode) {
+  ['url','img','manual'].forEach(m => {
+    document.getElementById('step'+cap(m)).classList.toggle('active', m === mode);
+    document.getElementById('zone'+cap(m)).classList.toggle('visible', m === mode);
+  });
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function clearForm() {
+  ['fTitle','fArtist','fDate','fVenue','fCity','fOpenTime','fStartTime',
+   'fMerchTime','fTokutenTime','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  document.getElementById('fStay').value = '';
+  document.getElementById('concertUrl').value = '';
+  document.getElementById('imgFile').value = '';
+  setStatus(false);
+}
+
+// ── URL FETCH ─────────────────────────────────────────────
+async function fetchFromUrl() {
+  const url = document.getElementById('concertUrl').value.trim();
+  if (!url) { showToast('URLを入力してください', 'err'); return; }
+  const anthKey = getAnthKey();
+  if (!anthKey) {
+    showToast('設定⚙からAnthropicキーを入力してください', 'err');
+    toggleSettings();
+    return;
+  }
+
+  document.getElementById('fetchUrlBtn').disabled = true;
+  setStatus(true, 'AIがページを解析中...');
+
+  const prompt = `以下のURLはライブ・コンサートの公演情報またはチケットページです。
+アクセスして以下の情報をJSONで抽出してください。情報がない場合はnullにしてください。
+時間はHH:MM形式（24時間）で返してください。
+
+URL: ${url}
+
+{
+  "title": "公演・ライブ名",
+  "artist": "アーティスト名",
+  "date": "YYYY-MM-DD",
+  "venue": "会場名",
+  "city": "都市名",
+  "open_time": "開場時間 HH:MM",
+  "start_time": "開演時間 HH:MM",
+  "merch_time": "物販開始時間 HH:MM",
+  "tokuten_time": "特典会・握手会開始時間 HH:MM",
+  "ticket_url": "チケット購入URL（このURLと同じまたは別途あれば）",
+  "concert_url": "公演詳細の公式URL"
+}
+
+JSONのみ返してください。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    const text = (data.content.find(b => b.type === 'text')?.text) || '';
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) fillForm(JSON.parse(m[0]), url);
+    setStatus(false);
+    showToast('読み取り完了！内容を確認してください', 'ok');
+  } catch(e) {
+    setStatus(false, null, e.message);
+    showToast('読み取りエラー: ' + e.message, 'err');
+  } finally {
+    document.getElementById('fetchUrlBtn').disabled = false;
+  }
+}
+
+// ── IMAGE FETCH ───────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f?.type.startsWith('image/')) handleImg(f);
+});
+
+async function handleImg(file) {
+  const anthKey = getAnthKey();
+  if (!anthKey) {
+    showToast('設定⚙からAnthropicキーを入力してください', 'err');
+    toggleSettings();
+    return;
+  }
+
+  setStatus(true, 'AIが画像を解析中...');
+  dz.querySelector('.drop-text').textContent = `📎 ${file.name}`;
+
+  const base64 = await new Promise(r => {
+    const rd = new FileReader();
+    rd.onload = e => r(e.target.result.split(',')[1]);
+    rd.readAsDataURL(file);
+  });
+
+  const mediaType = file.type || 'image/jpeg';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: `このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONで抽出してください。
+情報がない場合はnull。時間はHH:MM形式（24時間制）。
+
+{
+  "title": "公演・ライブ名",
+  "artist": "アーティスト名",
+  "date": "YYYY-MM-DD",
+  "venue": "会場名",
+  "city": "都市名",
+  "open_time": "開場 HH:MM",
+  "start_time": "開演 HH:MM",
+  "merch_time": "物販開始 HH:MM",
+  "tokuten_time": "特典会・握手会 HH:MM"
+}
+
+JSONのみ返してください。` }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    const text = data.content.find(b => b.type === 'text')?.text || '';
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) fillForm(JSON.parse(m[0]));
+    setStatus(false);
+    showToast('読み取り完了！', 'ok');
+  } catch(e) {
+    setStatus(false, null, e.message);
+    showToast('エラー: ' + e.message, 'err');
+  }
+}
+
+function fillForm(d, sourceUrl) {
+  if (d.title) document.getElementById('fTitle').value = d.title;
+  if (d.artist) document.getElementById('fArtist').value = d.artist;
+  if (d.date) document.getElementById('fDate').value = d.date;
+  if (d.venue) document.getElementById('fVenue').value = d.venue;
+  if (d.city) document.getElementById('fCity').value = d.city;
+  if (d.open_time) document.getElementById('fOpenTime').value = d.open_time;
+  if (d.start_time) document.getElementById('fStartTime').value = d.start_time;
+  if (d.merch_time) document.getElementById('fMerchTime').value = d.merch_time;
+  if (d.tokuten_time) document.getElementById('fTokutenTime').value = d.tokuten_time;
+  if (d.ticket_url) document.getElementById('fTicketUrl').value = d.ticket_url;
+  if (d.concert_url) document.getElementById('fConcertUrl').value = d.concert_url;
+  else if (sourceUrl) document.getElementById('fConcertUrl').value = sourceUrl;
+}
+
+// ── SUBMIT ────────────────────────────────────────────────
+async function submitConcert() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { showToast('ライブ名を入力してください', 'err'); return; }
+
+  const transport = [...document.querySelectorAll('.chip.on input')].map(i => i.value);
+
+  const payload = {
+    user_id: currentUser.id,
+    title,
+    artist: document.getElementById('fArtist').value || null,
+    concert_date: document.getElementById('fDate').value || null,
+    open_time: document.getElementById('fOpenTime').value || null,
+    start_time: document.getElementById('fStartTime').value || null,
+    merch_time: document.getElementById('fMerchTime').value || null,
+    tokuten_time: document.getElementById('fTokutenTime').value || null,
+    venue: document.getElementById('fVenue').value || null,
+    city: document.getElementById('fCity').value || null,
+    transport: transport.length ? transport : null,
+    stay: document.getElementById('fStay').value || null,
+    companion: document.getElementById('fCompanion').value || null,
+    ticket_url: document.getElementById('fTicketUrl').value || null,
+    concert_url: document.getElementById('fConcertUrl').value || null,
+    memo: document.getElementById('fMemo').value || null,
+  };
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+
+  let error;
+  if (editingId) {
+    const res = await supaClient.from('concerts').update(payload).eq('id', editingId);
+    error = res.error;
+  } else {
+    const res = await supaClient.from('concerts').insert(payload);
+    error = res.error;
+  }
+
+  btn.disabled = false;
+  if (error) { showToast('保存エラー: ' + error.message, 'err'); return; }
+
+  closeModal('addModal');
+  showToast(editingId ? '✓ 更新しました' : '✓ 登録しました！', 'ok');
+  await loadConcerts();
+}
+
+// ── DETAIL ────────────────────────────────────────────────
+function openDetail(id) {
+  const c = concerts.find(x => x.id === id);
+  if (!c) return;
+  detailId = id;
+
+  document.getElementById('detailTitle').textContent = c.title;
+
+  const timeItems = [
+    { key: 'open_time', label: '開場', cls: '' },
+    { key: 'start_time', label: '開演', cls: '' },
+    { key: 'merch_time', label: '物販', cls: 'merch' },
+    { key: 'tokuten_time', label: '特典会', cls: 'tokuten' },
+  ].filter(t => c[t.key]);
+
+  const timesHtml = timeItems.length ? `
+    <div class="detail-times">
+      ${timeItems.map(t => `
+        <div class="dtime ${t.cls}">
+          <div class="dtime-label">${t.label}</div>
+          <div class="dtime-val">${c[t.key].slice(0,5)}</div>
+        </div>
+      `).join('')}
+    </div>` : '';
+
+  const d = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
+  const dateStr = d ? `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）` : '—';
+
+  document.getElementById('detailBody').innerHTML = `
+    ${timesHtml}
+    <div class="detail-grid">
+      <div class="detail-item"><label>公演日</label><div class="val">${dateStr}</div></div>
+      <div class="detail-item"><label>アーティスト</label><div class="val">${esc(c.artist||'—')}</div></div>
+      <div class="detail-item"><label>会場</label><div class="val">${esc(c.venue||'—')}</div></div>
+      <div class="detail-item"><label>都市</label><div class="val">${esc(c.city||'—')}</div></div>
+      <div class="detail-item"><label>交通手段</label><div class="val">${(c.transport||[]).join('・')||'—'}</div></div>
+      <div class="detail-item"><label>宿泊</label><div class="val">${esc(c.stay||'—')}</div></div>
+      <div class="detail-item"><label>同行者</label><div class="val">${esc(c.companion||'—')}</div></div>
+      ${c.ticket_url ? `<div class="detail-item"><label>チケットURL</label><div class="val"><a href="${esc(c.ticket_url)}" target="_blank">🔗 開く</a></div></div>` : ''}
+      ${c.concert_url ? `<div class="detail-item"><label>公演詳細URL</label><div class="val"><a href="${esc(c.concert_url)}" target="_blank">🔗 公式ページ</a></div></div>` : ''}
+      ${c.memo ? `<div class="detail-item" style="grid-column:1/-1"><label>メモ</label><div class="val">${esc(c.memo)}</div></div>` : ''}
+    </div>`;
+
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function editConcert() {
+  const c = concerts.find(x => x.id === detailId);
+  if (!c) return;
+  closeModal('detailModal');
+  editingId = detailId;
+
+  clearForm();
+  document.getElementById('modalTitle').textContent = '遠征を編集';
+  document.getElementById('submitLabel').textContent = '更新する';
+  setInputMode('manual');
+
+  document.getElementById('fTitle').value = c.title || '';
+  document.getElementById('fArtist').value = c.artist || '';
+  document.getElementById('fDate').value = c.concert_date || '';
+  document.getElementById('fVenue').value = c.venue || '';
+  document.getElementById('fCity').value = c.city || '';
+  document.getElementById('fOpenTime').value = c.open_time?.slice(0,5) || '';
+  document.getElementById('fStartTime').value = c.start_time?.slice(0,5) || '';
+  document.getElementById('fMerchTime').value = c.merch_time?.slice(0,5) || '';
+  document.getElementById('fTokutenTime').value = c.tokuten_time?.slice(0,5) || '';
+  document.getElementById('fStay').value = c.stay || '';
+  document.getElementById('fCompanion').value = c.companion || '';
+  document.getElementById('fTicketUrl').value = c.ticket_url || '';
+  document.getElementById('fConcertUrl').value = c.concert_url || '';
+  document.getElementById('fMemo').value = c.memo || '';
+
+  if (c.transport) {
+    document.querySelectorAll('.chip').forEach(ch => {
+      if (c.transport.includes(ch.querySelector('input').value)) ch.classList.add('on');
+    });
+  }
+
+  document.getElementById('addModal').classList.add('open');
+}
+
+async function deleteConcert() {
+  if (!confirm('この遠征を削除しますか？')) return;
+  const { error } = await supaClient.from('concerts').delete().eq('id', detailId);
+  if (error) { showToast('削除エラー: ' + error.message, 'err'); return; }
+  closeModal('detailModal');
+  showToast('削除しました', 'ok');
+  await loadConcerts();
+}
+
+// ── UI HELPERS ────────────────────────────────────────────
+function setStatus(loading, msg, errMsg) {
+  const bar = document.getElementById('statusBar');
+  const sp = document.getElementById('spinner');
+  const txt = document.getElementById('statusText');
+  if (loading) {
+    bar.classList.add('visible');
+    sp.style.display = '';
+    txt.textContent = msg || '処理中...';
+    txt.className = '';
+  } else if (errMsg) {
+    bar.classList.add('visible');
+    sp.style.display = 'none';
+    txt.textContent = '⚠ ' + errMsg;
+    txt.className = 'status-err';
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function toggleChip(el) {
+  el.classList.toggle('on');
+  el.querySelector('input').checked = el.classList.contains('on');
+}
+
+function showToast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastDot').className = 'toast-dot ' + type;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function copySQL() {
+  // no-op (SQL setup removed)
+}
+
+// ── INIT ─────────────────────────────────────────────────
+async function init() {
+  // file:// 警告
+  if (location.protocol === 'file:') {
+    document.getElementById('loginErr').textContent =
+      '⚠️ ファイルをダブルクリックで開いています。ブラウザのセキュリティ制限でログインできません。GitHub PagesやVercelなどのサーバーから開いてください。';
+    return;
+  }
+
+  if (!initSupabase(HARDCODED_SUPA_URL, HARDCODED_SUPA_KEY)) {
+    showToast('Supabase接続に失敗しました', 'err');
+    return;
+  }
+  // Check existing session
+  const { data: { session } } = await supaClient.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    enterApp();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
