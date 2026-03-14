@@ -1365,6 +1365,10 @@ body::after {
         </div>
       </div>
 
+      <div class="input-zone" id="zoneManual">
+        <div style="font-size:12px;color:var(--text-muted);padding:8px 0">以下のフォームに直接入力してください</div>
+      </div>
+
       <!-- Status bar -->
       <div class="status-bar" id="statusBar">
         <div class="spinner" id="spinner"></div>
@@ -1745,46 +1749,48 @@ function calMove(dir) {
 }
 
 function renderCalendar() {
-  if (!document.getElementById('calGrid')) return;
-  document.getElementById('calMonthLabel').textContent = `${calYear}年 ${MONTHS_JP[calMonth]}`;
+  const gridEl = document.getElementById('calGrid');
+  const labelEl = document.getElementById('calMonthLabel');
+  if (!gridEl || !labelEl) return;
 
-  const grid = document.getElementById('calGrid');
+  labelEl.textContent = calYear + '年 ' + MONTHS_JP[calMonth];
+
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const today = new Date();
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth();
+  const todayD = today.getDate();
 
-  // Weekday headers
-  let html = WEEKDAYS.map(d => `<div class="cal-weekday">${d}</div>`).join('');
+  let out = WEEKDAYS.map(d => '<div class="cal-weekday">' + d + '</div>').join('');
 
-  // Blank cells before first day
   for (let i = 0; i < firstDay; i++) {
-    html += `<div class="cal-cell other-month"></div>`;
+    out += '<div class="cal-cell other-month"></div>';
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const isToday = today.getFullYear() === calYear && today.getMonth() === calMonth && today.getDate() === d;
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = (todayY === calYear && todayM === calMonth && todayD === d);
+    const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     const dayConcerts = concerts.filter(c => c.concert_date === dateStr);
-    const eventsHtml = dayConcerts.map(c =>
-      `<div class="cal-event" onclick="event.stopPropagation();openDetail('${c.id}')">
-        ${esc(c.title)}${c.artist ? ' · ' + esc(c.artist) : ''}${c.venue ? ' @ ' + esc(c.venue) : ''}
-      </div>`
-    ).join('');
 
-    const cellClick = dayConcerts.length === 1 ? `onclick="openDetail('${dayConcerts[0].id}')"` :
-                     dayConcerts.length > 1  ? `onclick="openDetail('${dayConcerts[0].id}')"` : '';
-    html += `<div class="cal-cell${isToday?' today':''}" ${cellClick} style="${dayConcerts.length>0?'cursor:pointer':''}">
-      <span class="cal-day-num">${d}</span>
-      ${eventsHtml}
-    </div>`;
+    let eventsHtml = '';
+    dayConcerts.forEach(function(c) {
+      const label = esc(c.title) + (c.artist ? ' · ' + esc(c.artist) : '') + (c.venue ? ' @ ' + esc(c.venue) : '');
+      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail('' + c.id + '')">' + label + '</div>';
+    });
+
+    const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail('' + dayConcerts[0].id + '')" style="cursor:pointer"' : '';
+    out += '<div class="cal-cell' + (isToday ? ' today' : '') + '"' + clickAttr + '>';
+    out += '<span class="cal-day-num">' + d + '</span>';
+    out += eventsHtml;
+    out += '</div>';
   }
 
-  // Fill remaining cells
   const total = firstDay + daysInMonth;
   const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
-  for (let i = 0; i < remainder; i++) html += `<div class="cal-cell other-month"></div>`;
+  for (let i = 0; i < remainder; i++) out += '<div class="cal-cell other-month"></div>';
 
-  grid.innerHTML = html;
+  gridEl.innerHTML = out;
 }
 
 function switchView(v) {
@@ -1810,8 +1816,10 @@ function closeModal(id) {
 
 function setInputMode(mode) {
   ['url','img','manual'].forEach(m => {
-    document.getElementById('step'+cap(m)).classList.toggle('active', m === mode);
-    document.getElementById('zone'+cap(m)).classList.toggle('visible', m === mode);
+    const stepEl = document.getElementById('step'+cap(m));
+    const zoneEl = document.getElementById('zone'+cap(m));
+    if (stepEl) stepEl.classList.toggle('active', m === mode);
+    if (zoneEl) zoneEl.classList.toggle('visible', m === mode);
   });
 }
 
