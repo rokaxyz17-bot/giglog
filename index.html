@@ -1517,432 +1517,147 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + 
 
 async function callGemini(body, retries = 3) {
   for (let i = 0; i <= retries; i++) {
-    const res = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...body, generationConfig: { temperature: 0 } })
-    });
+    let res;
+    try {
+      res = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...body, generationConfig: { temperature: 0 } })
+      });
+    } catch(networkErr) {
+      if (i < retries) {
+        await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
+      throw new Error('ネットワークエラー: ' + networkErr.message);
+    }
+
     if (res.status === 429) {
       if (i < retries) {
-        const wait = 5000 * (i + 1);
-        showToast('レート制限中... ' + (wait/1000) + '秒後に再試行', 'ok');
+        const wait = 8000 * (i + 1);
+        showToast('制限中... ' + (wait/1000) + '秒後に再試行(' + (i+1) + '/' + retries + ')', 'ok');
         await new Promise(r => setTimeout(r, wait));
         continue;
       }
-      throw new Error('リクエスト制限中です（429）。1分ほど待ってから再試行してください');
+      throw new Error('レート制限(429)。1分ほど待ってから再試行してください');
     }
     if (!res.ok) {
-      const errBody = await res.text().catch(() => '');
-      throw new Error('API ' + res.status + (errBody ? ': ' + errBody.slice(0,80) : ''));
+      let errMsg = 'API Error ' + res.status;
+      try { const e = await res.json(); errMsg += ': ' + (e.error?.message || JSON.stringify(e).slice(0,80)); } catch(e2) {}
+      throw new Error(errMsg);
     }
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('解析できませんでした');
+    if (!m) throw new Error('JSONが取得できませんでした');
     return JSON.parse(m[0]);
   }
-  throw new Error('リクエスト制限中です。1分ほど待ってから再試行してください');
-}
-const WEEKDAYS = ['日','月','火','水','木','金','土'];
-const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-
-// ── CONFIG ───────────────────────────────────────────────
-function loadCfg() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-  catch { return {}; }
+  throw new Error('リトライ上限。しばらく待ってから再試行してください');
 }
 
-function saveCfgData(data) {
-  const existing = loadCfg();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...existing, ...data }));
-}
-
-// Gemini API used (free tier)
-
-// ── SUPABASE INIT ─────────────────────────────────────────
-function initSupabase(url, key) {
-  try {
-    supaClient = supabase.createClient(url, key);
-    return true;
-  } catch(e) {
-    return false;
-  }
-}
-
-// ── SETUP / AUTH ──────────────────────────────────────────
-function switchAuthTab(tab) {
-  document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
-  const tabs = ['login','signup'];
-  const idx = tabs.indexOf(tab);
-  if (idx >= 0) document.querySelectorAll('.setup-tab')[idx].classList.add('active');
-  document.getElementById('loginPane').style.display = tab === 'login' ? '' : 'none';
-  document.getElementById('signupPane').style.display = tab === 'signup' ? '' : 'none';
-}
-
-async function saveConfig() {
-  const url = document.getElementById('cfgSupaUrl').value.trim();
-  const key = document.getElementById('cfgSupaKey').value.trim();
-  const anth = document.getElementById('cfgAnthKey').value.trim();
-  const err = document.getElementById('configErr');
-
-  if (!url || !key) { err.textContent = 'SupabaseのURLとKeyは必須です'; return; }
-
-  if (!initSupabase(url, key)) {
-    err.textContent = '接続に失敗しました。URLとKeyを確認してください';
-    return;
-  }
-
-  try {
-    const { error } = await supaClient.from('concerts').select('id').limit(1);
-    if (error && error.code !== 'PGRST116') {
-      err.textContent = 'テーブルが見つかりません。SQLを実行してください: ' + error.message;
-      return;
-    }
-    saveCfgData({ supaUrl: url, supaKey: key, anthKey: anth });
-    err.style.color = 'var(--green)';
-    err.textContent = '✓ 接続成功！ログインしてください';
-    setTimeout(() => switchAuthTab('login'), 1500);
-  } catch(e) {
-    err.textContent = 'エラー: ' + e.message;
-  }
-}
-
-async function doLogin() {
-  if (!ensureSupabase()) return;
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  const err = document.getElementById('loginErr');
-  err.textContent = '';
-  err.style.color = '';
-
-  try {
-    const { data, error } = await supaClient.auth.signInWithPassword({ email, password: pass });
-    if (error) {
-      if (error.message === 'Email not confirmed') {
-        err.textContent = 'メールアドレスの確認が完了していません。確認メールのリンクをクリックしてから再度ログインしてください。';
-      } else if (error.message === 'Invalid login credentials') {
-        err.textContent = 'メールアドレスまたはパスワードが正しくありません。';
-      } else if (error.message.includes('rate limit') || error.message.includes('too many')) {
-        err.textContent = 'しばらく時間をおいてから再度お試しください。';
-      } else if (error.message.includes('network') || error.message.includes('fetch')) {
-        err.textContent = 'ネットワークエラーです。接続を確認してください。';
-      } else {
-        err.textContent = 'ログインに失敗しました: ' + error.message;
-      }
-      return;
-    }
-    currentUser = data.user;
-    enterApp();
-  } catch(e) {
-    err.textContent = '接続エラーが発生しました。インターネット接続を確認してください。(' + e.message + ')';
-  }
-}
-
-async function doSignup() {
-  if (!ensureSupabase()) return;
-  const name = document.getElementById('signupName').value.trim();
-  const email = document.getElementById('signupEmail').value.trim();
-  const pass = document.getElementById('signupPass').value;
-  const err = document.getElementById('signupErr');
-  err.textContent = '';
-  err.style.color = '';
-
-  if (!name) { err.textContent = 'アカウント名を入力してください'; return; }
-  if (pass.length < 6) { err.textContent = 'パスワードは6文字以上にしてください'; return; }
-
-  try {
-    const { data, error } = await supaClient.auth.signUp({
-      email, password: pass,
-      options: { data: { display_name: name } }
-    });
-    if (error) {
-      if (error.message.includes('already registered') || error.message.includes('already been registered')) {
-        err.textContent = 'このメールアドレスはすでに登録されています。ログインしてください。';
-      } else if (error.message.includes('invalid')) {
-        err.textContent = 'メールアドレスの形式が正しくありません。';
-      } else {
-        err.textContent = 'エラー: ' + error.message;
-      }
-      return;
-    }
-    // アカウント名をlocalStorageに保存
-    saveCfgData({ displayName: name });
-    err.style.color = 'var(--green)';
-    err.textContent = '✓ 登録完了！確認メールをお送りしました。メール内のリンクをクリックして認証後、ログインしてください。';
-  } catch(e) {
-    err.textContent = '接続エラーが発生しました。インターネット接続を確認してください。';
-  }
-}
-
-async function doLogout() {
-  await supaClient.auth.signOut();
-  currentUser = null;
-  concerts = [];
-  showScreen('setupScreen');
-}
-
-function ensureSupabase() {
-  if (!supaClient) initSupabase(HARDCODED_SUPA_URL, HARDCODED_SUPA_KEY);
-  return true;
-}
-
-// ── APP ───────────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-async function enterApp() {
-  showScreen('appScreen');
-  const meta = currentUser.user_metadata || {};
-  const displayName = loadCfg().displayName || meta.display_name || meta.name || currentUser.email.split('@')[0];
-  document.getElementById('userEmailLabel').textContent = displayName;
-  // カレンダーをデフォルト表示
-  document.getElementById('listView').style.display = 'none';
-  document.getElementById('calendarView').style.display = 'block';
-  await loadConcerts();
-  initCalendar();
-}
-
-function toggleSettings() {
-  document.getElementById('settingsPanel').classList.toggle('open');
-}
-
-function saveSettings() {
-  // no-op (keys are hardcoded)
-}
-
-// ── CONCERT DATA ──────────────────────────────────────────
-async function loadConcerts() {
-  const { data, error } = await supaClient
-    .from('concerts')
-    .select('*')
-    .order('concert_date', { ascending: true });
-
-  if (error) { showToast('読み込みエラー: ' + error.message, 'err'); return; }
-  concerts = data || [];
-  renderList();
-  renderCalendar();
-}
-
-function renderList() {
-  const el = document.getElementById('concertList');
-  if (!concerts.length) {
-    el.innerHTML = `<div class="empty-state">
-      <span class="empty-icon">🎤</span>
-      <p>まだ遠征が登録されていません<br>「遠征を追加」から登録しましょう</p>
-    </div>`;
-    return;
-  }
-
-  el.innerHTML = concerts.map(c => {
-    const d = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
-    const monthStr = d ? `${d.getMonth()+1}月` : '—';
-    const dayStr = d ? d.getDate() : '—';
-    const wdStr = d ? WEEKDAYS[d.getDay()] : '';
-
-    const times = [];
-    if (c.open_time) times.push(`<div class="time-chip">🚪 ${c.open_time.slice(0,5)}</div>`);
-    if (c.start_time) times.push(`<div class="time-chip">▶ ${c.start_time.slice(0,5)}</div>`);
-    if (c.merch_time) times.push(`<div class="time-chip merch">🛍 ${c.merch_time.slice(0,5)}</div>`);
-    if (c.tokuten_time) times.push(`<div class="time-chip tokuten">🌟 ${c.tokuten_time.slice(0,5)}</div>`);
-
-    const transport = (c.transport || []).join(' ');
-
-    return `<div class="concert-card" onclick="openDetail('${c.id}')">
-      <div class="concert-card-inner">
-        <div class="card-date-col">
-          <div class="card-month">${monthStr}</div>
-          <div class="card-day">${dayStr}</div>
-          <div class="card-weekday">${wdStr}</div>
-        </div>
-        <div class="card-body-col">
-          <div class="card-title">${esc(c.title)}</div>
-          ${c.artist ? `<div class="card-artist">${esc(c.artist)}</div>` : ''}
-          <div class="card-times">${times.join('')}</div>
-        </div>
-        <div class="card-meta-col">
-          <div class="venue-tag">${esc(c.venue||'')}${c.city ? '<br>'+esc(c.city) : ''}</div>
-          ${transport ? `<div class="transport-tags">${(c.transport||[]).map(t=>`<span class="transport-tag">${t}</span>`).join('')}</div>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ── CALENDAR ─────────────────────────────────────────────
-function initCalendar() {
-  const now = new Date();
-  calYear = now.getFullYear();
-  calMonth = now.getMonth();
-  renderCalendar();
-}
-
-function calMove(dir) {
-  calMonth += dir;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  renderCalendar();
-}
-
-function renderCalendar() {
-  const gridEl = document.getElementById('calGrid');
-  const labelEl = document.getElementById('calMonthLabel');
-  if (!gridEl || !labelEl) return;
-
-  labelEl.textContent = calYear + '年 ' + MONTHS_JP[calMonth];
-
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const today = new Date();
-  const todayY = today.getFullYear();
-  const todayM = today.getMonth();
-  const todayD = today.getDate();
-
-  let out = WEEKDAYS.map(d => '<div class="cal-weekday">' + d + '</div>').join('');
-
-  for (let i = 0; i < firstDay; i++) {
-    out += '<div class="cal-cell other-month"></div>';
-  }
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const isToday = (todayY === calYear && todayM === calMonth && todayD === d);
-    const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const dayConcerts = concerts.filter(c => c.concert_date === dateStr);
-
-    let eventsHtml = '';
-    dayConcerts.forEach(function(c) {
-      const label = esc(c.title) + (c.artist ? ' · ' + esc(c.artist) : '') + (c.venue ? ' @ ' + esc(c.venue) : '');
-      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')">' + label + '</div>';
-    });
-
-    const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail(\'' + dayConcerts[0].id + '\')" style="cursor:pointer"' : '';
-    out += '<div class="cal-cell' + (isToday ? ' today' : '') + '"' + clickAttr + '>';
-    out += '<span class="cal-day-num">' + d + '</span>';
-    out += eventsHtml;
-    out += '</div>';
-  }
-
-  const total = firstDay + daysInMonth;
-  const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
-  for (let i = 0; i < remainder; i++) out += '<div class="cal-cell other-month"></div>';
-
-  gridEl.innerHTML = out;
-}
-
-function switchView(v) {
-  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.view-tab')[v === 'list' ? 0 : 1].classList.add('active');
-  document.getElementById('listView').style.display = v === 'list' ? 'block' : 'none';
-  document.getElementById('calendarView').style.display = v === 'calendar' ? 'block' : 'none';
-}
-
-// ── ADD MODAL ────────────────────────────────────────────
-function openAddModal() {
-  editingId = null;
-  clearForm();
-  document.getElementById('modalTitle').textContent = '遠征を追加';
-  document.getElementById('submitLabel').textContent = '登録する';
-  setInputMode('url');
-  document.getElementById('addModal').classList.add('open');
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-function setInputMode(mode) {
-  ['url','img','manual'].forEach(m => {
-    const stepEl = document.getElementById('step'+cap(m));
-    const zoneEl = document.getElementById('zone'+cap(m));
-    if (stepEl) stepEl.classList.toggle('active', m === mode);
-    if (zoneEl) zoneEl.classList.toggle('visible', m === mode);
-  });
-}
-
-function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-function clearForm() {
-  ['fTitle','fArtist','fDate','fVenue','fCity','fOpenTime','fStartTime',
-   'fMerchTime','fTokutenTime','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
-  document.getElementById('fStay').value = '';
-  document.getElementById('concertUrl').value = '';
-  document.getElementById('imgFile').value = '';
-  setStatus(false);
-}
-
-// ── URL FETCH ─────────────────────────────────────────────
 async function fetchFromUrl() {
   const url = document.getElementById('concertUrl').value.trim();
   if (!url) { showToast('URLを入力してください', 'err'); return; }
 
   document.getElementById('fetchUrlBtn').disabled = true;
-  setStatus(true, 'AIがページを解析中...');
+  setStatus(true, 'AIがURLを解析中...');
 
-  const prompt = 'このURLのライブ・コンサート公演情報にアクセスして以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}\n\nURL: ' + url;
+  const JSON_SCHEMA = '{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}';
+  const BASE_PROMPT = 'このURLのライブ・コンサート公演情報から以下をJSONのみで返してください。説明文は一切不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\nURL: ' + url + '\n' + JSON_SCHEMA;
 
+  // Step1: Gemini URL Context Tool（GeminiがURLに直接アクセス）
   try {
-    // Gemini URL Context Tool でURLを直接読み込む
-    const body = {
-      contents: [{ parts: [{ text: prompt }] }],
+    const info = await callGemini({
+      contents: [{ parts: [{ text: BASE_PROMPT }] }],
       tools: [{ url_context: {} }]
-    };
-    const info = await callGemini(body);
+    });
     fillForm(info);
     setStatus(false);
     showToast('✓ 読み取り完了', 'ok');
-  } catch(e) {
-    // フォールバック: CORSプロキシ経由でページを取得してGeminiに渡す
-    try {
-      setStatus(true, 'プロキシ経由で取得中...');
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-      const proxyRes = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
-      const proxyData = await proxyRes.json();
-      const raw = proxyData.contents || '';
-      const tmp = document.createElement('div');
-      tmp.innerHTML = raw;
-      const pageText = (tmp.innerText || tmp.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 3000);
+    document.getElementById('fetchUrlBtn').disabled = false;
+    return;
+  } catch(e1) {
+    console.log('URL Context failed:', e1.message);
+  }
 
-      setStatus(true, 'AIが情報を解析中...');
-      const fallbackPrompt = 'このライブ・コンサート公演情報から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\nURL: ' + url + '\nページ内容: ' + pageText + '\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}';
-      const info = await callGemini({ contents: [{ parts: [{ text: fallbackPrompt }] }] });
-      fillForm(info);
-      setStatus(false);
-      showToast('✓ 読み取り完了', 'ok');
-    } catch(e2) {
-      setStatus(false);
-      showToast('読み取りエラー: ' + e2.message, 'err');
+  // Step2: CORSプロキシ経由（複数試行）
+  const PROXIES = [
+    'https://corsproxy.io/?' + encodeURIComponent(url),
+    'https://api.allorigins.win/get?url=' + encodeURIComponent(url),
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url)
+  ];
+
+  let pageText = '';
+  for (const proxyUrl of PROXIES) {
+    try {
+      setStatus(true, 'ページ取得中...');
+      const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+      if (!r.ok) continue;
+      const raw = await r.text();
+      // allorigins の場合は .contents を取得
+      let htmlStr = raw;
+      try { const j = JSON.parse(raw); if (j.contents) htmlStr = j.contents; } catch(e) {}
+      const tmp = document.createElement('div');
+      tmp.innerHTML = htmlStr;
+      pageText = (tmp.innerText || tmp.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 4000);
+      if (pageText.length > 100) break;
+    } catch(proxyErr) {
+      console.log('Proxy failed:', proxyUrl, proxyErr.message);
     }
+  }
+
+  if (!pageText || pageText.length < 50) {
+    setStatus(false);
+    showToast('ページの取得に失敗しました。手動入力をお試しください', 'err');
+    document.getElementById('fetchUrlBtn').disabled = false;
+    return;
+  }
+
+  try {
+    setStatus(true, 'AIが情報を解析中...');
+    const info = await callGemini({
+      contents: [{ parts: [{ text: 'このライブ・コンサート公演情報から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\nURL: ' + url + '\nページ内容: ' + pageText + '\n' + JSON_SCHEMA }] }]
+    });
+    fillForm(info);
+    setStatus(false);
+    showToast('✓ 読み取り完了', 'ok');
+  } catch(e2) {
+    setStatus(false);
+    showToast('読み取りエラー: ' + e2.message, 'err');
   } finally {
     document.getElementById('fetchUrlBtn').disabled = false;
   }
 }
-
 
 async function handleImg(file) {
   setStatus(true, 'AIが画像を解析中...');
   const dz = document.getElementById('dropZone');
   if (dz) dz.querySelector('.drop-text').textContent = '📎 ' + file.name;
 
-  const base64 = await new Promise((res, rej) => {
-    const rd = new FileReader();
-    rd.onload = e => res(e.target.result.split(',')[1]);
-    rd.onerror = () => rej(new Error('読み込み失敗'));
-    rd.readAsDataURL(file);
-  });
+  let base64;
+  try {
+    base64 = await new Promise((res, rej) => {
+      const rd = new FileReader();
+      rd.onload = e => res(e.target.result.split(',')[1]);
+      rd.onerror = () => rej(new Error('画像の読み込みに失敗しました'));
+      rd.readAsDataURL(file);
+    });
+  } catch(readErr) {
+    setStatus(false);
+    showToast(readErr.message, 'err');
+    return;
+  }
 
   const mediaType = file.type || 'image/jpeg';
-  const prompt = 'このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。時間はHH:MM形式（24時間制）。\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":"HH:MM","tokuten_time":"HH:MM","venue":"会場名","city":"都市名","ticket_url":null,"concert_url":null}';
+  const prompt = 'このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":null}';
 
   try {
-    const info = await callGemini({ contents: [{ parts: [
-      { inline_data: { mime_type: mediaType, data: base64 } },
-      { text: prompt }
-    ]}] });
+    const info = await callGemini({
+      contents: [{ parts: [
+        { inline_data: { mime_type: mediaType, data: base64 } },
+        { text: prompt }
+      ]}]
+    });
     fillForm(info);
     setStatus(false);
     showToast('✓ 読み取り完了', 'ok');
@@ -1952,205 +1667,3 @@ async function handleImg(file) {
   }
 }
 
-// ── SUBMIT ────────────────────────────────────────────────
-async function submitConcert() {
-  const title = document.getElementById('fTitle').value.trim();
-  if (!title) { showToast('ライブ名を入力してください', 'err'); return; }
-
-  const transport = [...document.querySelectorAll('.chip.on input')].map(i => i.value);
-
-  const payload = {
-    user_id: currentUser.id,
-    title,
-    artist: document.getElementById('fArtist').value || null,
-    concert_date: document.getElementById('fDate').value || null,
-    open_time: document.getElementById('fOpenTime').value || null,
-    start_time: document.getElementById('fStartTime').value || null,
-    merch_time: document.getElementById('fMerchTime').value || null,
-    tokuten_time: document.getElementById('fTokutenTime').value || null,
-    venue: document.getElementById('fVenue').value || null,
-    city: document.getElementById('fCity').value || null,
-    transport: transport.length ? transport : null,
-    stay: document.getElementById('fStay').value || null,
-    companion: document.getElementById('fCompanion').value || null,
-    ticket_url: document.getElementById('fTicketUrl').value || null,
-    concert_url: document.getElementById('fConcertUrl').value || null,
-    memo: document.getElementById('fMemo').value || null,
-  };
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-
-  let error;
-  if (editingId) {
-    const res = await supaClient.from('concerts').update(payload).eq('id', editingId);
-    error = res.error;
-  } else {
-    const res = await supaClient.from('concerts').insert(payload);
-    error = res.error;
-  }
-
-  btn.disabled = false;
-  if (error) { showToast('保存エラー: ' + error.message, 'err'); return; }
-
-  closeModal('addModal');
-  showToast(editingId ? '✓ 更新しました' : '✓ 登録しました！', 'ok');
-  await loadConcerts();
-}
-
-// ── DETAIL ────────────────────────────────────────────────
-function openDetail(id) {
-  const c = concerts.find(x => x.id === id);
-  if (!c) return;
-  detailId = id;
-
-  document.getElementById('detailTitle').textContent = c.title;
-
-  const timeItems = [
-    { key: 'open_time', label: '開場', cls: '' },
-    { key: 'start_time', label: '開演', cls: '' },
-    { key: 'merch_time', label: '物販', cls: 'merch' },
-    { key: 'tokuten_time', label: '特典会', cls: 'tokuten' },
-  ].filter(t => c[t.key]);
-
-  const timesHtml = timeItems.length ? `
-    <div class="detail-times">
-      ${timeItems.map(t => `
-        <div class="dtime ${t.cls}">
-          <div class="dtime-label">${t.label}</div>
-          <div class="dtime-val">${c[t.key].slice(0,5)}</div>
-        </div>
-      `).join('')}
-    </div>` : '';
-
-  const d = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
-  const dateStr = d ? `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）` : '—';
-
-  document.getElementById('detailBody').innerHTML = `
-    ${timesHtml}
-    <div class="detail-grid">
-      <div class="detail-item"><label>公演日</label><div class="val">${dateStr}</div></div>
-      <div class="detail-item"><label>アーティスト</label><div class="val">${esc(c.artist||'—')}</div></div>
-      <div class="detail-item"><label>会場</label><div class="val">${esc(c.venue||'—')}</div></div>
-      <div class="detail-item"><label>都市</label><div class="val">${esc(c.city||'—')}</div></div>
-      <div class="detail-item"><label>交通手段</label><div class="val">${(c.transport||[]).join('・')||'—'}</div></div>
-      <div class="detail-item"><label>宿泊</label><div class="val">${esc(c.stay||'—')}</div></div>
-      <div class="detail-item"><label>同行者</label><div class="val">${esc(c.companion||'—')}</div></div>
-      ${c.ticket_url ? `<div class="detail-item"><label>チケットURL</label><div class="val"><a href="${esc(c.ticket_url)}" target="_blank">🔗 開く</a></div></div>` : ''}
-      ${c.concert_url ? `<div class="detail-item"><label>公演詳細URL</label><div class="val"><a href="${esc(c.concert_url)}" target="_blank">🔗 公式ページ</a></div></div>` : ''}
-      ${c.memo ? `<div class="detail-item" style="grid-column:1/-1"><label>メモ</label><div class="val">${esc(c.memo)}</div></div>` : ''}
-    </div>`;
-
-  document.getElementById('detailModal').classList.add('open');
-}
-
-function editConcert() {
-  const c = concerts.find(x => x.id === detailId);
-  if (!c) return;
-  closeModal('detailModal');
-  editingId = detailId;
-
-  clearForm();
-  document.getElementById('modalTitle').textContent = '遠征を編集';
-  document.getElementById('submitLabel').textContent = '更新する';
-  setInputMode('manual');
-
-  document.getElementById('fTitle').value = c.title || '';
-  document.getElementById('fArtist').value = c.artist || '';
-  document.getElementById('fDate').value = c.concert_date || '';
-  document.getElementById('fVenue').value = c.venue || '';
-  document.getElementById('fCity').value = c.city || '';
-  document.getElementById('fOpenTime').value = c.open_time?.slice(0,5) || '';
-  document.getElementById('fStartTime').value = c.start_time?.slice(0,5) || '';
-  document.getElementById('fMerchTime').value = c.merch_time?.slice(0,5) || '';
-  document.getElementById('fTokutenTime').value = c.tokuten_time?.slice(0,5) || '';
-  document.getElementById('fStay').value = c.stay || '';
-  document.getElementById('fCompanion').value = c.companion || '';
-  document.getElementById('fTicketUrl').value = c.ticket_url || '';
-  document.getElementById('fConcertUrl').value = c.concert_url || '';
-  document.getElementById('fMemo').value = c.memo || '';
-
-  if (c.transport) {
-    document.querySelectorAll('.chip').forEach(ch => {
-      if (c.transport.includes(ch.querySelector('input').value)) ch.classList.add('on');
-    });
-  }
-
-  document.getElementById('addModal').classList.add('open');
-}
-
-async function deleteConcert() {
-  if (!confirm('この遠征を削除しますか？')) return;
-  const { error } = await supaClient.from('concerts').delete().eq('id', detailId);
-  if (error) { showToast('削除エラー: ' + error.message, 'err'); return; }
-  closeModal('detailModal');
-  showToast('削除しました', 'ok');
-  await loadConcerts();
-}
-
-// ── UI HELPERS ────────────────────────────────────────────
-function setStatus(loading, msg, errMsg) {
-  const bar = document.getElementById('statusBar');
-  const sp = document.getElementById('spinner');
-  const txt = document.getElementById('statusText');
-  if (loading) {
-    bar.classList.add('visible');
-    sp.style.display = '';
-    txt.textContent = msg || '処理中...';
-    txt.className = '';
-  } else if (errMsg) {
-    bar.classList.add('visible');
-    sp.style.display = 'none';
-    txt.textContent = '⚠ ' + errMsg;
-    txt.className = 'status-err';
-  } else {
-    bar.classList.remove('visible');
-  }
-}
-
-function toggleChip(el) {
-  el.classList.toggle('on');
-  el.querySelector('input').checked = el.classList.contains('on');
-}
-
-function showToast(msg, type = 'ok') {
-  const t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  document.getElementById('toastDot').className = 'toast-dot ' + type;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function copySQL() {
-  // no-op (SQL setup removed)
-}
-
-// ── INIT ─────────────────────────────────────────────────
-async function init() {
-  // file:// 警告
-  if (location.protocol === 'file:') {
-    document.getElementById('loginErr').textContent =
-      '⚠️ ファイルをダブルクリックで開いています。ブラウザのセキュリティ制限でログインできません。GitHub PagesやVercelなどのサーバーから開いてください。';
-    return;
-  }
-
-  if (!initSupabase(HARDCODED_SUPA_URL, HARDCODED_SUPA_KEY)) {
-    showToast('Supabase接続に失敗しました', 'err');
-    return;
-  }
-  // Check existing session
-  const { data: { session } } = await supaClient.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    enterApp();
-  }
-}
-
-init();
-</script>
-</body>
-</html>
