@@ -1515,25 +1515,33 @@ const GEMINI_KEY = 'AIzaSyCQN7c8a81LA6cxawDajSd94TlLVeaQG54';
 const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_KEY;
 
-async function callGemini(body, retries = 2) {
+async function callGemini(body, retries = 3) {
   for (let i = 0; i <= retries; i++) {
     const res = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...body, generationConfig: { temperature: 0 } })
     });
-    if (res.status === 429 && i < retries) {
-      await new Promise(r => setTimeout(r, 3000 * (i + 1)));
-      continue;
+    if (res.status === 429) {
+      if (i < retries) {
+        const wait = 5000 * (i + 1);
+        showToast('レート制限中... ' + (wait/1000) + '秒後に再試行', 'ok');
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      throw new Error('リクエスト制限中です（429）。1分ほど待ってから再試行してください');
     }
-    if (!res.ok) throw new Error('API ' + res.status);
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      throw new Error('API ' + res.status + (errBody ? ': ' + errBody.slice(0,80) : ''));
+    }
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const m = text.match(/\{[\s\S]*\}/);
     if (!m) throw new Error('解析できませんでした');
     return JSON.parse(m[0]);
   }
-  throw new Error('リクエスト制限中です。少し待ってから再試行してください');
+  throw new Error('リクエスト制限中です。1分ほど待ってから再試行してください');
 }
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
@@ -1873,11 +1881,27 @@ async function fetchFromUrl() {
   if (!url) { showToast('URLを入力してください', 'err'); return; }
 
   document.getElementById('fetchUrlBtn').disabled = true;
-  setStatus(true, 'AIがページを解析中...');
-
-  const prompt = 'このURLのライブ・コンサート公演情報から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。時間はHH:MM形式（24時間制）。URL: ' + url + '\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":"HH:MM","tokuten_time":"HH:MM","venue":"会場名","city":"都市名","ticket_url":"チケットURL","concert_url":"' + url + '"}';
+  setStatus(true, 'ページを取得中...');
 
   try {
+    // まずページのHTMLを取得
+    let pageText = '';
+    try {
+      const pageRes = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      const raw = await pageRes.text();
+      // HTMLタグを除去してテキストのみ抽出（最大3000文字）
+      const tmp = document.createElement('div');
+      tmp.innerHTML = raw;
+      pageText = (tmp.innerText || tmp.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 3000);
+    } catch(fetchErr) {
+      // CORSなどでフェッチできない場合はURLのみで試みる
+      pageText = '（ページの取得に失敗しました。URLから推測してください）';
+    }
+
+    setStatus(true, 'AIが情報を解析中...');
+
+    const prompt = 'このライブ・コンサート公演情報のページテキストから以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\n\nURL: ' + url + '\n\nページテキスト:\n' + pageText + '\n\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}';
+
     const info = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
     fillForm(info);
     setStatus(false);
