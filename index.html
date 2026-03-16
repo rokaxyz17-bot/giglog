@@ -532,7 +532,6 @@ body::after {
 }
 
 /* ── CALENDAR ── */
-#calendarView { display: none; }
 
 .calendar-header {
   display: flex;
@@ -1666,10 +1665,11 @@ function showScreen(id) {
 
 async function enterApp() {
   showScreen('appScreen');
-  // アカウント名を優先、なければメタデータ、なければメール
   const meta = currentUser.user_metadata || {};
   const displayName = loadCfg().displayName || meta.display_name || meta.name || currentUser.email.split('@')[0];
   document.getElementById('userEmailLabel').textContent = displayName;
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('calendarView').style.display = 'block';
   await loadConcerts();
   initCalendar();
 }
@@ -1803,8 +1803,8 @@ function renderCalendar() {
 function switchView(v) {
   document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.view-tab')[v === 'list' ? 0 : 1].classList.add('active');
-  document.getElementById('listView').style.display = v === 'list' ? '' : 'none';
-  document.getElementById('calendarView').style.display = v === 'calendar' ? '' : 'none';
+  document.getElementById('listView').style.display = v === 'list' ? 'block' : 'none';
+  document.getElementById('calendarView').style.display = v === 'calendar' ? 'block' : 'none';
 }
 
 // ── ADD MODAL ────────────────────────────────────────────
