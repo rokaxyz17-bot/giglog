@@ -1512,7 +1512,29 @@ const STORAGE_KEY = 'giglog_cfg';
 const HARDCODED_SUPA_URL = 'https://hjslduovqhskvvogwdmr.supabase.co';
 const HARDCODED_SUPA_KEY = atob('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1ocWMyeGtkVzkyY1doemEzWjJiMmQzWkcxeUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTnpNME1EY3lPRFlzSW1WNGNDSTZNakE0T0RrNE16STRObjAuaWNKcnJITVhpc0o2cjdVZFRQZ01ZNWdvNUhEQXVleUEyTnAxeE82RFB0bw==');
 const GEMINI_KEY = 'AIzaSyCQN7c8a81LA6cxawDajSd94TlLVeaQG54';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_KEY;
+
+async function callGemini(body, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    const res = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, generationConfig: { temperature: 0 } })
+    });
+    if (res.status === 429 && i < retries) {
+      await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+      continue;
+    }
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('解析できませんでした');
+    return JSON.parse(m[0]);
+  }
+  throw new Error('リクエスト制限中です。少し待ってから再試行してください');
+}
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
@@ -1853,23 +1875,11 @@ async function fetchFromUrl() {
   document.getElementById('fetchUrlBtn').disabled = true;
   setStatus(true, 'AIがページを解析中...');
 
-  const prompt = 'このURLのライブ・コンサート公演情報から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。時間はHH:MM形式（24時間制）。URL: ' + url + '\n\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":"HH:MM","tokuten_time":"HH:MM","venue":"会場名","city":"都市名","ticket_url":"チケットURL","concert_url":"' + url + '"}';
+  const prompt = 'このURLのライブ・コンサート公演情報から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。時間はHH:MM形式（24時間制）。URL: ' + url + '\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":"HH:MM","tokuten_time":"HH:MM","venue":"会場名","city":"都市名","ticket_url":"チケットURL","concert_url":"' + url + '"}';
 
   try {
-    const res = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0 }
-      })
-    });
-    if (!res.ok) throw new Error('API ' + res.status);
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('解析できませんでした');
-    fillForm(JSON.parse(m[0]));
+    const info = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
+    fillForm(info);
     setStatus(false);
     showToast('✓ 読み取り完了', 'ok');
   } catch(e) {
@@ -1897,23 +1907,11 @@ async function handleImg(file) {
   const prompt = 'このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。時間はHH:MM形式（24時間制）。\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":"HH:MM","tokuten_time":"HH:MM","venue":"会場名","city":"都市名","ticket_url":null,"concert_url":null}';
 
   try {
-    const res = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [
-          { inline_data: { mime_type: mediaType, data: base64 } },
-          { text: prompt }
-        ]}],
-        generationConfig: { temperature: 0 }
-      })
-    });
-    if (!res.ok) throw new Error('API ' + res.status);
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('解析できませんでした');
-    fillForm(JSON.parse(m[0]));
+    const info = await callGemini({ contents: [{ parts: [
+      { inline_data: { mime_type: mediaType, data: base64 } },
+      { text: prompt }
+    ]}] });
+    fillForm(info);
     setStatus(false);
     showToast('✓ 読み取り完了', 'ok');
   } catch(e) {
