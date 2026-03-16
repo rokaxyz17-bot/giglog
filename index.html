@@ -1296,12 +1296,22 @@ body::after {
     </div>
     <div class="header-center"></div>
     <div class="user-email" id="userEmailLabel"></div>
-    <button class="btn-settings" onclick="toggleSettings()" title="設定" style="display:none">⚙</button>
+    <button class="btn-settings" onclick="toggleSettings()" title="設定">⚙</button>
     <button class="btn-logout" onclick="doLogout()">ログアウト</button>
   </header>
 
-  <!-- Settings panel (hidden - keys are hardcoded) -->
-  <div class="settings-panel" id="settingsPanel" style="display:none"></div>
+  <!-- Settings panel -->
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-title">⚙ API設定</div>
+    <div class="field">
+      <label>Gemini APIキー</label>
+      <input type="password" id="settGeminiKey" placeholder="AIzaSy..." autocomplete="off">
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin:-8px 0 12px">
+      <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> で取得（無料）
+    </div>
+    <button class="btn-primary" style="margin-top:4px" onclick="saveSettings()">保存</button>
+  </div>
 
   <div class="app-body">
     <div class="view-bar">
@@ -1514,9 +1524,11 @@ const STORAGE_KEY = 'giglog_cfg';
 // ── HARDCODED CREDENTIALS (管理者設定済み) ─────────────────
 const HARDCODED_SUPA_URL = 'https://hjslduovqhskvvogwdmr.supabase.co';
 const HARDCODED_SUPA_KEY = atob('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1ocWMyeGtkVzkyY1doemEzWjJiMmQzWkcxeUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTnpNME1EY3lPRFlzSW1WNGNDSTZNakE0T0RrNE16STRObjAuaWNKcnJITVhpc0o2cjdVZFRQZ01ZNWdvNUhEQXVleUEyTnAxeE82RFB0bw==');
-const GEMINI_KEY = 'AIzaSyCQN7c8a81LA6cxawDajSd94TlLVeaQG54';
 const GEMINI_MODEL = 'gemini-2.0-flash';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_KEY;
+function getGeminiUrl() {
+  const key = loadCfg().geminiKey || '';
+  return 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + key;
+}
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
@@ -1673,6 +1685,16 @@ async function enterApp() {
   document.getElementById('userEmailLabel').textContent = displayName;
   document.getElementById('listView').style.display = 'none';
   document.getElementById('calendarView').style.display = 'block';
+  // キー未設定なら設定パネルを開く
+  const cfg = loadCfg();
+  if (cfg.settGeminiKey) document.getElementById('settGeminiKey').value = cfg.settGeminiKey;
+  if (cfg.geminiKey) document.getElementById('settGeminiKey').value = cfg.geminiKey;
+  if (!cfg.geminiKey) {
+    setTimeout(() => {
+      showToast('⚙ Gemini APIキーを設定してください', 'err');
+      toggleSettings();
+    }, 500);
+  }
   await loadConcerts();
   initCalendar();
 }
@@ -1682,7 +1704,11 @@ function toggleSettings() {
 }
 
 function saveSettings() {
-  // no-op (keys are hardcoded)
+  const k = document.getElementById('settGeminiKey').value.trim();
+  if (!k) { showToast('APIキーを入力してください', 'err'); return; }
+  saveCfgData({ geminiKey: k });
+  document.getElementById('settingsPanel').classList.remove('open');
+  showToast('✓ APIキーを保存しました', 'ok');
 }
 
 // ── CONCERT DATA ──────────────────────────────────────────
