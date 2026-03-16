@@ -1881,34 +1881,42 @@ async function fetchFromUrl() {
   if (!url) { showToast('URLを入力してください', 'err'); return; }
 
   document.getElementById('fetchUrlBtn').disabled = true;
-  setStatus(true, 'ページを取得中...');
+  setStatus(true, 'AIがページを解析中...');
+
+  const prompt = 'このURLのライブ・コンサート公演情報にアクセスして以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}\n\nURL: ' + url;
 
   try {
-    // まずページのHTMLを取得
-    let pageText = '';
-    try {
-      const pageRes = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      const raw = await pageRes.text();
-      // HTMLタグを除去してテキストのみ抽出（最大3000文字）
-      const tmp = document.createElement('div');
-      tmp.innerHTML = raw;
-      pageText = (tmp.innerText || tmp.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 3000);
-    } catch(fetchErr) {
-      // CORSなどでフェッチできない場合はURLのみで試みる
-      pageText = '（ページの取得に失敗しました。URLから推測してください）';
-    }
-
-    setStatus(true, 'AIが情報を解析中...');
-
-    const prompt = 'このライブ・コンサート公演情報のページテキストから以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\n\nURL: ' + url + '\n\nページテキスト:\n' + pageText + '\n\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}';
-
-    const info = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
+    // Gemini URL Context Tool でURLを直接読み込む
+    const body = {
+      contents: [{ parts: [{ text: prompt }] }],
+      tools: [{ url_context: {} }]
+    };
+    const info = await callGemini(body);
     fillForm(info);
     setStatus(false);
     showToast('✓ 読み取り完了', 'ok');
   } catch(e) {
-    setStatus(false);
-    showToast('読み取りエラー: ' + e.message, 'err');
+    // フォールバック: CORSプロキシ経由でページを取得してGeminiに渡す
+    try {
+      setStatus(true, 'プロキシ経由で取得中...');
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+      const proxyRes = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+      const proxyData = await proxyRes.json();
+      const raw = proxyData.contents || '';
+      const tmp = document.createElement('div');
+      tmp.innerHTML = raw;
+      const pageText = (tmp.innerText || tmp.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 3000);
+
+      setStatus(true, 'AIが情報を解析中...');
+      const fallbackPrompt = 'このライブ・コンサート公演情報から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\nURL: ' + url + '\nページ内容: ' + pageText + '\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}';
+      const info = await callGemini({ contents: [{ parts: [{ text: fallbackPrompt }] }] });
+      fillForm(info);
+      setStatus(false);
+      showToast('✓ 読み取り完了', 'ok');
+    } catch(e2) {
+      setStatus(false);
+      showToast('読み取りエラー: ' + e2.message, 'err');
+    }
   } finally {
     document.getElementById('fetchUrlBtn').disabled = false;
   }
