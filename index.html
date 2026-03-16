@@ -1073,7 +1073,7 @@ body::after {
   font-size: 13px;
   color: var(--accent);
 }
-.status-bar.show { display: flex; }
+.status-bar.visible { display: flex; }
 
 /* ── FORM SECTION ── */
 .form-section {
@@ -1831,6 +1831,41 @@ function setInputMode(mode) {
     if (stepEl) stepEl.classList.toggle('active', m === mode);
     if (zoneEl) zoneEl.classList.toggle('visible', m === mode);
   });
+}
+
+
+function fillForm(d, sourceUrl) {
+  if (d.title) document.getElementById('fTitle').value = d.title;
+  if (d.artist) document.getElementById('fArtist').value = d.artist;
+  if (d.concert_date) document.getElementById('fDate').value = d.concert_date;
+  if (d.date) document.getElementById('fDate').value = d.date;
+  if (d.venue) document.getElementById('fVenue').value = d.venue;
+  if (d.city) document.getElementById('fCity').value = d.city;
+  if (d.open_time) document.getElementById('fOpenTime').value = d.open_time;
+  if (d.start_time) document.getElementById('fStartTime').value = d.start_time;
+  if (d.merch_time) document.getElementById('fMerchTime').value = d.merch_time;
+  if (d.tokuten_time) document.getElementById('fTokutenTime').value = d.tokuten_time;
+  if (d.ticket_url) document.getElementById('fTicketUrl').value = d.ticket_url;
+  if (d.concert_url) document.getElementById('fConcertUrl').value = d.concert_url;
+  else if (sourceUrl) document.getElementById('fConcertUrl').value = sourceUrl;
+}
+
+function setStatus(loading, msg, errMsg) {
+  const bar = document.getElementById('statusBar');
+  const sp = document.getElementById('spinner');
+  const txt = document.getElementById('statusText');
+  if (!bar) return;
+  if (loading) {
+    bar.classList.add('visible');
+    if (sp) sp.style.display = '';
+    if (txt) txt.textContent = msg || '処理中...';
+  } else if (errMsg) {
+    bar.classList.add('visible');
+    if (sp) sp.style.display = 'none';
+    if (txt) { txt.textContent = '⚠ ' + errMsg; txt.className = 'status-err'; }
+  } else {
+    bar.classList.remove('visible');
+  }
 }
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
