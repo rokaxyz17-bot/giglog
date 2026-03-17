@@ -1445,6 +1445,10 @@ body::after {
           <label>🌟 特典会</label>
           <input type="time" id="fTokutenTime">
         </div>
+        <div class="field">
+          <label>💿 CD販売開始</label>
+          <input type="time" id="fCdSaleTime">
+        </div>
       </div>
 
       <div class="form-section">その他</div>
@@ -1854,6 +1858,7 @@ function fillForm(d, sourceUrl) {
   if (d.start_time) document.getElementById('fStartTime').value = d.start_time;
   if (d.merch_time) document.getElementById('fMerchTime').value = d.merch_time;
   if (d.tokuten_time) document.getElementById('fTokutenTime').value = d.tokuten_time;
+  if (d.cd_sale_time) document.getElementById('fCdSaleTime').value = d.cd_sale_time;
   if (d.ticket_url) document.getElementById('fTicketUrl').value = d.ticket_url;
   if (d.concert_url) document.getElementById('fConcertUrl').value = d.concert_url;
   else if (sourceUrl) document.getElementById('fConcertUrl').value = sourceUrl;
@@ -1877,11 +1882,57 @@ function setStatus(loading, msg, errMsg) {
   }
 }
 
+async function submitConcert() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { showToast('ライブ名を入力してください', 'err'); return; }
+
+  const transport = [...document.querySelectorAll('.chip.on input')].map(i => i.value);
+
+  const payload = {
+    user_id: currentUser.id,
+    title,
+    artist: document.getElementById('fArtist').value || null,
+    concert_date: document.getElementById('fDate').value || null,
+    open_time: document.getElementById('fOpenTime').value || null,
+    start_time: document.getElementById('fStartTime').value || null,
+    merch_time: document.getElementById('fMerchTime').value || null,
+    tokuten_time: document.getElementById('fTokutenTime').value || null,
+    cd_sale_time: document.getElementById('fCdSaleTime')?.value || null,
+    venue: document.getElementById('fVenue').value || null,
+    city: document.getElementById('fCity').value || null,
+    transport: transport.length ? transport : null,
+    stay: document.getElementById('fStay').value || null,
+    companion: document.getElementById('fCompanion').value || null,
+    ticket_url: document.getElementById('fTicketUrl').value || null,
+    concert_url: document.getElementById('fConcertUrl').value || null,
+    memo: document.getElementById('fMemo').value || null,
+  };
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+
+  let error;
+  if (editingId) {
+    const res = await supaClient.from('concerts').update(payload).eq('id', editingId);
+    error = res.error;
+  } else {
+    const res = await supaClient.from('concerts').insert(payload);
+    error = res.error;
+  }
+
+  btn.disabled = false;
+  if (error) { showToast('保存エラー: ' + error.message, 'err'); return; }
+
+  closeModal('addModal');
+  showToast(editingId ? '✓ 更新しました' : '✓ 登録しました！', 'ok');
+  await loadConcerts();
+}
+
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function clearForm() {
   ['fTitle','fArtist','fDate','fVenue','fCity','fOpenTime','fStartTime',
-   'fMerchTime','fTokutenTime','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
+   'fMerchTime','fTokutenTime','fCdSaleTime','fCdSaleTime','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1931,7 +1982,7 @@ async function fetchFromUrl() {
   document.getElementById('fetchUrlBtn').disabled = true;
   setStatus(true, 'AIがページを解析中...');
 
-  const JSON_SCHEMA = '{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}';
+  const JSON_SCHEMA = '{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"cd_sale_time":null,"cd_sale_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":"' + url + '"}';
   const prompt = 'このURLのライブ・コンサート公演情報から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\nURL: ' + url + '\n' + JSON_SCHEMA;
 
   try {
@@ -1972,7 +2023,7 @@ async function handleImg(file) {
   }
 
   const mediaType = file.type || 'image/jpeg';
-  const prompt = 'このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":null}';
+  const prompt = 'このライブ・コンサートのチケットまたは公演情報の画像から以下をJSONのみで返してください。説明文不要。情報がない場合はnull。日付はYYYY-MM-DD形式、時間はHH:MM形式（24時間制）。\n{"title":"ライブ名","artist":"アーティスト名","concert_date":"YYYY-MM-DD","open_time":"HH:MM","start_time":"HH:MM","merch_time":null,"tokuten_time":null,"cd_sale_time":null,"cd_sale_time":null,"venue":"会場名","city":"都市名","ticket_url":null,"concert_url":null}';
 
   try {
     const info = await callGemini({
