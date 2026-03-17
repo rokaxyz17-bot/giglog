@@ -1912,9 +1912,10 @@ async function callGemini(body, retries = 2) {
       throw new Error(msg);
     }
     const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = typeof raw === 'string' ? raw : JSON.stringify(raw || '');
     const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('解析できませんでした');
+    if (!m) throw new Error('解析できませんでした: ' + text.slice(0, 80));
     return JSON.parse(m[0]);
   }
   throw new Error('リトライ上限。しばらく待ってから再試行してください');
