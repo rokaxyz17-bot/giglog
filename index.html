@@ -636,9 +636,8 @@ body::after {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 600;
-  border-left: 2px solid var(--accent);
-  transition: background 0.12s;
+  max-width: 100%;
+  display: block;
 }
 
 .cal-event:hover { background: rgba(26,92,255,0.18); }
@@ -1160,8 +1159,9 @@ body::after {
   border-bottom: 1.5px solid var(--border);
 }
 .cal-cell {
-  min-height: 72px;
-  padding: 6px;
+  height: 80px;
+  overflow: hidden;
+  padding: 4px 6px;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   transition: background 0.12s;
@@ -1410,8 +1410,7 @@ body::after {
         <div class="field">
           <label>宿泊</label>
           <select id="fStay">
-            <option value="なし" selected>なし</option>
-            <option value="">未定</option>
+            <option value="" selected>なし</option>
             <option value="日帰り">日帰り</option>
             <option value="1泊">1泊</option>
             <option value="2泊">2泊</option>
@@ -1799,8 +1798,19 @@ function renderCalendar() {
 
     let eventsHtml = '';
     dayConcerts.forEach(function(c) {
-      const label = esc(c.title) + (c.artist ? ' · ' + esc(c.artist) : '') + (c.venue ? ' @ ' + esc(c.venue) : '');
-      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')">' + label + '</div>';
+      // 略称: アーティスト@会場 or タイトル省略
+      const shortArtist = c.artist ? c.artist.replace(/ExWHYZ/g,'ExWHYZ') : '';
+      const shortVenue = c.venue ? c.venue.replace(/LIQUIDROOM/,'LQDR').replace(/Zepp/,'Zepp') : '';
+      let label;
+      if (shortArtist && shortVenue) {
+        label = esc(shortArtist) + '@' + esc(shortVenue);
+      } else if (shortArtist) {
+        label = esc(shortArtist);
+      } else {
+        // タイトルを略称化（20文字超は省略）
+        label = esc(c.title.length > 16 ? c.title.slice(0,15) + '…' : c.title);
+      }
+      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" title="' + esc(c.title) + '">' + label + '</div>';
     });
 
     const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail(\'' + dayConcerts[0].id + '\')" style="cursor:pointer"' : '';
