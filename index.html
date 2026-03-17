@@ -1798,19 +1798,17 @@ function renderCalendar() {
 
     let eventsHtml = '';
     dayConcerts.forEach(function(c) {
-      // 略称: アーティスト@会場 or タイトル省略
-      const shortArtist = c.artist ? c.artist.replace(/ExWHYZ/g,'ExWHYZ') : '';
-      const shortVenue = c.venue ? c.venue.replace(/LIQUIDROOM/,'LQDR').replace(/Zepp/,'Zepp') : '';
-      let label;
-      if (shortArtist && shortVenue) {
-        label = esc(shortArtist) + '@' + esc(shortVenue);
-      } else if (shortArtist) {
-        label = esc(shortArtist);
+      // 略称: アーティスト@都市 or タイトル省略
+      let calLabel;
+      if (c.artist && c.city) {
+        calLabel = esc(c.artist) + '@' + esc(c.city);
+      } else if (c.artist) {
+        calLabel = esc(c.artist);
       } else {
-        // タイトルを略称化（20文字超は省略）
-        label = esc(c.title.length > 16 ? c.title.slice(0,15) + '…' : c.title);
+        const t = c.title || '';
+        calLabel = esc(t.length > 12 ? t.slice(0,11) + '…' : t);
       }
-      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" title="' + esc(c.title) + '">' + label + '</div>';
+      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" title="' + esc(c.title) + '">' + calLabel + '</div>';
     });
 
     const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail(\'' + dayConcerts[0].id + '\')" style="cursor:pointer"' : '';
