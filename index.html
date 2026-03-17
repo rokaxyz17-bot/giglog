@@ -1250,6 +1250,135 @@ body::after {
   opacity: 0.7;
 }
 .cal-nav-picker:hover { opacity: 1; }
+
+/* ── EVENT TYPE COLORS ── */
+:root {
+  --et-wanman:   #1a5cff;
+  --et-fes:      #f59e0b;
+  --et-release:  #10b981;
+  --et-taiband:  #8b5cf6;
+  --et-other:    #6b7280;
+}
+.cal-event[data-type="ワンマン"]      { background: #dbeafe; color: var(--et-wanman);  border-left: 2px solid var(--et-wanman); }
+.cal-event[data-type="フェス"]        { background: #fef3c7; color: var(--et-fes);     border-left: 2px solid var(--et-fes); }
+.cal-event[data-type="リリースイベント"] { background: #d1fae5; color: var(--et-release); border-left: 2px solid var(--et-release); }
+.cal-event[data-type="対バンライブ"]  { background: #ede9fe; color: var(--et-taiband); border-left: 2px solid var(--et-taiband); }
+.cal-event[data-type="その他"]        { background: #f3f4f6; color: var(--et-other);   border-left: 2px solid var(--et-other); }
+
+/* ── EVENT TYPE RADIO ── */
+.event-type-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.et-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--sans);
+  transition: all 0.15s;
+  user-select: none;
+}
+.et-chip input[type="radio"] { display: none; }
+.et-chip.selected { border-width: 2px; }
+.et-chip[data-type="ワンマン"].selected      { background: #dbeafe; color: var(--et-wanman);  border-color: var(--et-wanman); }
+.et-chip[data-type="フェス"].selected        { background: #fef3c7; color: var(--et-fes);     border-color: var(--et-fes); }
+.et-chip[data-type="リリースイベント"].selected { background: #d1fae5; color: var(--et-release); border-color: var(--et-release); }
+.et-chip[data-type="対バンライブ"].selected  { background: #ede9fe; color: var(--et-taiband); border-color: var(--et-taiband); }
+.et-chip[data-type="その他"].selected        { background: #f3f4f6; color: var(--et-other);   border-color: var(--et-other); }
+
+/* ── DETAIL MODAL REDESIGN ── */
+.detail-section { padding: 20px 24px 0; }
+.detail-title-block { margin-bottom: 16px; }
+.detail-type-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.detail-type-badge[data-type="ワンマン"]      { background: #dbeafe; color: var(--et-wanman); }
+.detail-type-badge[data-type="フェス"]        { background: #fef3c7; color: var(--et-fes); }
+.detail-type-badge[data-type="リリースイベント"] { background: #d1fae5; color: var(--et-release); }
+.detail-type-badge[data-type="対バンライブ"]  { background: #ede9fe; color: var(--et-taiband); }
+.detail-type-badge[data-type="その他"]        { background: #f3f4f6; color: var(--et-other); }
+.detail-h1 { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.3; }
+.detail-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.detail-times {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.dtime {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  min-width: 60px;
+}
+.dtime-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+.dtime-val { font-size: 16px; font-weight: 800; font-family: 'Space Mono', monospace; color: var(--text); }
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.detail-item {
+  background: var(--surface);
+  padding: 10px 14px;
+}
+.detail-item label { font-size: 10px; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.detail-item .val { font-size: 13px; color: var(--text); font-weight: 500; }
+.detail-item .val a { color: var(--accent); text-decoration: none; }
+
+/* ── MONTH PICKER POPUP ── */
+.month-picker-popup {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  z-index: 200;
+  min-width: 260px;
+}
+.month-picker-popup h4 {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  margin-bottom: 10px; text-align: center;
+}
+.month-picker-popup select {
+  font-size: 14px; padding: 6px 10px;
+  border-radius: 8px; border: 1.5px solid var(--border);
+  background: var(--bg); color: var(--text); width: 100%;
+  margin-bottom: 8px;
+}
+.month-picker-popup .btn-go {
+  width: 100%; padding: 8px; background: var(--accent);
+  color: #fff; border: none; border-radius: 8px;
+  font-weight: 700; cursor: pointer; font-size: 13px;
+}
+.cal-header { position: relative; }
 </style>
 <body>
 
@@ -1478,8 +1607,22 @@ body::after {
       <div class="form-section">基本情報</div>
       <div class="grid-2">
         <div class="field col-full">
-          <label>ライブ名 *</label>
+          <label>イベント形態 <span style="color:var(--accent)">*</span></label>
+          <div class="event-type-group" id="eventTypeGroup">
+            <label class="et-chip" data-type="ワンマン" onclick="selectEventType(this)"><input type="radio" name="eventType" value="ワンマン">ワンマン</label>
+            <label class="et-chip" data-type="フェス" onclick="selectEventType(this)"><input type="radio" name="eventType" value="フェス">フェス</label>
+            <label class="et-chip" data-type="リリースイベント" onclick="selectEventType(this)"><input type="radio" name="eventType" value="リリースイベント">リリースイベント</label>
+            <label class="et-chip" data-type="対バンライブ" onclick="selectEventType(this)"><input type="radio" name="eventType" value="対バンライブ">対バンライブ</label>
+            <label class="et-chip" data-type="その他" onclick="selectEventType(this)"><input type="radio" name="eventType" value="その他">その他</label>
+          </div>
+        </div>
+        <div class="field col-full">
+          <label>タイトル *</label>
           <input type="text" id="fTitle" placeholder="例：ExWHYZ 3rd Anniversary Live">
+        </div>
+        <div class="field col-full">
+          <label>表示名 <span style="font-size:10px;color:var(--text-muted);font-weight:400">（任意・カレンダー略称）</span></label>
+          <input type="text" id="fCalLabel" placeholder="例：ExWHYZ@東京、サマソニ2026">
         </div>
         <div class="field col-full">
           <label>アーティスト</label>
@@ -1557,11 +1700,7 @@ body::after {
           <label>公演詳細URL</label>
           <input type="url" id="fConcertUrl" placeholder="公演の公式ページ">
         </div>
-        <div class="field col-full">
-          <label>📌 カレンダー表示名（略称・任意）</label>
-          <input type="text" id="fCalLabel" placeholder="例：ExWHYZ@東京、サマソニ2026">
-          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">空欄の場合は自動生成（短いタイトル→そのまま、長い場合→アーティスト@都市）</div>
-        </div>
+
         <div class="field col-full">
           <label>メモ</label>
           <textarea id="fMemo" rows="2" style="resize:vertical" placeholder="グッズ予定・セトリ予想など"></textarea>
@@ -1853,22 +1992,36 @@ function initCalendar() {
 
 
 function toggleMonthPicker() {
-  const picker = document.getElementById('calMonthPicker');
-  const label = document.getElementById('calMonthLabel');
-  if (picker.style.display === 'none') {
-    // 年の選択肢を生成（現在年-2〜+3）
-    const yearSel = document.getElementById('calPickYear');
-    yearSel.innerHTML = '';
-    for (let y = calYear - 2; y <= calYear + 3; y++) {
-      yearSel.innerHTML += '<option value="' + y + '"' + (y === calYear ? ' selected' : '') + '>' + y + '年</option>';
-    }
-    document.getElementById('calPickMonth').value = calMonth;
-    picker.style.display = 'flex';
-    label.style.display = 'none';
-  } else {
-    picker.style.display = 'none';
-    label.style.display = '';
+  let popup = document.getElementById('monthPickerPopup');
+  if (popup) { popup.remove(); return; }
+  popup = document.createElement('div');
+  popup.id = 'monthPickerPopup';
+  popup.className = 'month-picker-popup';
+  // 年選択肢生成
+  let yearOpts = '';
+  for (let y = calYear - 2; y <= calYear + 3; y++) {
+    yearOpts += '<option value="' + y + '"' + (y === calYear ? ' selected' : '') + '>' + y + '年</option>';
   }
+  let monthOpts = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
+    .map((m,i) => '<option value="' + i + '"' + (i === calMonth ? ' selected' : '') + '>' + m + '</option>').join('');
+  popup.innerHTML = '<h4>月を選択</h4><select id="mppYear">' + yearOpts + '</select><select id="mppMonth">' + monthOpts + '</select><button class="btn-go" onclick="applyMonthPicker()">移動</button>';
+  document.querySelector('.cal-header').appendChild(popup);
+  // 外クリックで閉じる
+  setTimeout(() => document.addEventListener('click', closeMPP), 10);
+}
+function closeMPP(e) {
+  const p = document.getElementById('monthPickerPopup');
+  if (p && !p.contains(e.target) && !e.target.closest('.cal-nav-picker')) {
+    p.remove();
+    document.removeEventListener('click', closeMPP);
+  }
+}
+function applyMonthPicker() {
+  calYear = parseInt(document.getElementById('mppYear').value);
+  calMonth = parseInt(document.getElementById('mppMonth').value);
+  renderCalendar();
+  const p = document.getElementById('monthPickerPopup');
+  if (p) { p.remove(); document.removeEventListener('click', closeMPP); }
 }
 
 function jumpToMonth() {
@@ -1877,6 +2030,13 @@ function jumpToMonth() {
   renderCalendar();
   document.getElementById('calMonthPicker').style.display = 'none';
   document.getElementById('calMonthLabel').style.display = '';
+}
+
+
+function selectEventType(el) {
+  document.querySelectorAll('.et-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type="radio"]').checked = true;
 }
 
 function calMove(dir) {
@@ -1933,7 +2093,7 @@ function renderCalendar() {
           calLabel = esc(t.slice(0,11) + '…');
         }
       }
-      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" data-title="' + esc(c.title) + '">' + calLabel + '</div>';
+      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" data-title="' + esc(c.title) + '" data-type="' + esc(c.event_type||'') + '">' + calLabel + '</div>';
     });
 
     const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail(\'' + dayConcerts[0].id + '\')" style="cursor:pointer"' : '';
@@ -2018,7 +2178,11 @@ function setStatus(loading, msg, errMsg) {
 
 async function submitConcert() {
   const title = document.getElementById('fTitle').value.trim();
-  if (!title) { showToast('ライブ名を入力してください', 'err'); return; }
+  if (!title) { showToast('タイトルを入力してください', 'err'); return; }
+
+  const eventTypeEl = document.querySelector('input[name="eventType"]:checked');
+  if (!eventTypeEl) { showToast('イベント形態を選択してください', 'err'); return; }
+  const eventType = eventTypeEl.value;
 
   const transport = [...document.querySelectorAll('.chip.on input')].map(i => i.value);
 
@@ -2032,6 +2196,7 @@ async function submitConcert() {
     merch_time: document.getElementById('fMerchTime').value || null,
     tokuten_time: document.getElementById('fTokutenTime').value || null,
     cd_sale_time: document.getElementById('fCdSaleTime')?.value || null,
+    event_type: eventType,
     cal_label: document.getElementById('fCalLabel')?.value || null,
     venue: document.getElementById('fVenue').value || null,
     city: document.getElementById('fCity').value || null,
@@ -2068,43 +2233,39 @@ function openDetail(id) {
   if (!c) return;
   detailId = id;
 
-  document.getElementById('detailTitle').textContent = c.title;
+  const d2 = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
+  const dateStr2 = d2 ? `${d2.getFullYear()}年${d2.getMonth()+1}月${d2.getDate()}日（${WEEKDAYS[d2.getDay()]}）` : '—';
 
   const timeItems = [
-    { key: 'open_time', label: '開場', cls: '' },
-    { key: 'start_time', label: '開演', cls: '' },
-    { key: 'merch_time', label: '物販', cls: 'merch' },
-    { key: 'tokuten_time', label: '特典会', cls: 'tokuten' },
-    { key: 'cd_sale_time', label: 'CD販売', cls: '' },
+    { key: 'open_time', label: '開場' },
+    { key: 'start_time', label: '開演' },
+    { key: 'merch_time', label: '物販' },
+    { key: 'tokuten_time', label: '特典会' },
+    { key: 'cd_sale_time', label: 'CD販売' },
   ].filter(t => c[t.key]);
 
-  const timesHtml = timeItems.length ? `
-    <div class="detail-times">
-      ${timeItems.map(t => `
-        <div class="dtime ${t.cls}">
-          <div class="dtime-label">${t.label}</div>
-          <div class="dtime-val">${c[t.key].slice(0,5)}</div>
-        </div>
-      `).join('')}
-    </div>` : '';
+  const timesHtml = timeItems.length ? `<div class="detail-times">${
+    timeItems.map(t => `<div class="dtime"><div class="dtime-label">${t.label}</div><div class="dtime-val">${c[t.key].slice(0,5)}</div></div>`).join('')
+  }</div>` : '';
 
-  const d = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
-  const dateStr = d ? `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）` : '—';
+  document.getElementById('detailTitle').textContent = c.title;
 
   document.getElementById('detailBody').innerHTML = `
-    ${timesHtml}
-    <div class="detail-grid">
-      <div class="detail-item"><label>公演日</label><div class="val">${dateStr}</div></div>
-      <div class="detail-item"><label>アーティスト</label><div class="val">${esc(c.artist||'—')}</div></div>
-      <div class="detail-item"><label>会場</label><div class="val">${esc(c.venue||'—')}</div></div>
-      <div class="detail-item"><label>都市</label><div class="val">${esc(c.city||'—')}</div></div>
-      <div class="detail-item"><label>交通手段</label><div class="val">${(c.transport||[]).join('・')||'—'}</div></div>
-      <div class="detail-item"><label>宿泊</label><div class="val">${esc(c.stay||'—')}</div></div>
-      <div class="detail-item"><label>同行者</label><div class="val">${esc(c.companion||'—')}</div></div>
-      ${c.ticket_url ? `<div class="detail-item"><label>チケット</label><div class="val"><a href="${esc(c.ticket_url)}" target="_blank">🔗 開く</a></div></div>` : ''}
-      ${c.concert_url ? `<div class="detail-item"><label>公演詳細</label><div class="val"><a href="${esc(c.concert_url)}" target="_blank">🔗 公式ページ</a></div></div>` : ''}
-      ${c.cal_label ? `<div class="detail-item"><label>カレンダー表示名</label><div class="val">${esc(c.cal_label)}</div></div>` : ''}
-      ${c.memo ? `<div class="detail-item" style="grid-column:1/-1"><label>メモ</label><div class="val">${esc(c.memo)}</div></div>` : ''}
+    <div class="detail-section">
+      <div class="detail-title-block">
+        ${c.event_type ? `<div class="detail-type-badge" data-type="${esc(c.event_type)}">${esc(c.event_type)}</div>` : ''}
+        <div class="detail-sub">${dateStr2}${c.venue ? ' · ' + esc(c.venue) : ''}${c.city ? '（' + esc(c.city) + '）' : ''}</div>
+      </div>
+      ${timesHtml}
+      <div class="detail-grid">
+        <div class="detail-item"><label>アーティスト</label><div class="val">${esc(c.artist||'—')}</div></div>
+        <div class="detail-item"><label>宿泊</label><div class="val">${esc(c.stay||'—')}</div></div>
+        <div class="detail-item"><label>交通手段</label><div class="val">${(c.transport||[]).join('・')||'—'}</div></div>
+        <div class="detail-item"><label>同行者</label><div class="val">${esc(c.companion||'—')}</div></div>
+        ${c.ticket_url ? `<div class="detail-item"><label>チケット</label><div class="val"><a href="${esc(c.ticket_url)}" target="_blank">🔗 開く</a></div></div>` : ''}
+        ${c.concert_url ? `<div class="detail-item"><label>公演詳細</label><div class="val"><a href="${esc(c.concert_url)}" target="_blank">🔗 公式</a></div></div>` : ''}
+        ${c.memo ? `<div class="detail-item" style="grid-column:1/-1"><label>メモ</label><div class="val">${esc(c.memo)}</div></div>` : ''}
+      </div>
     </div>`;
 
   document.getElementById('detailModal').classList.add('open');
@@ -2134,6 +2295,10 @@ function editConcert() {
   if (cdEl) cdEl.value = c.cd_sale_time?.slice(0,5) || '';
   const calLabelEl = document.getElementById('fCalLabel');
   if (calLabelEl) calLabelEl.value = c.cal_label || '';
+  if (c.event_type) {
+    const etEl = document.querySelector('.et-chip[data-type="' + c.event_type + '"]');
+    if (etEl) { etEl.classList.add('selected'); etEl.querySelector('input').checked = true; }
+  }
   document.getElementById('fStay').value = c.stay || '';
   document.getElementById('fCompanion').value = c.companion || '';
   document.getElementById('fTicketUrl').value = c.ticket_url || '';
@@ -2161,6 +2326,8 @@ async function deleteConcert() {
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function clearForm() {
+  document.querySelectorAll('.et-chip').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('input[name="eventType"]').forEach(r => r.checked = false);
   ['fTitle','fArtist','fDate','fVenue','fCity','fOpenTime','fStartTime',
    'fMerchTime','fTokutenTime','fCdSaleTime','fCalLabel','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
     const el = document.getElementById(id);
