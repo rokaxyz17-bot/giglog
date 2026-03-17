@@ -1191,6 +1191,52 @@ body::after {
 
 /* カレンダーは常に表示（enterAppでblock設定） */
 #calendarView { display: block !important; }
+
+.cal-month-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cal-month-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── CUSTOM TOOLTIP ── */
+.cal-event {
+  position: relative;
+}
+.cal-event::after {
+  content: attr(data-title);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  background: rgba(20,20,30,0.92);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 100;
+  max-width: 200px;
+  white-space: normal;
+  word-break: break-all;
+}
+.cal-event:hover::after {
+  opacity: 1;
+}
 </style>
 <body>
 
@@ -1332,7 +1378,18 @@ body::after {
     <div id="calendarView">
       <div class="cal-header">
         <button class="cal-nav" onclick="calMove(-1)">‹</button>
-        <div class="cal-month-label" id="calMonthLabel"></div>
+        <div class="cal-month-center">
+          <div class="cal-month-label" id="calMonthLabel" onclick="toggleMonthPicker()" style="cursor:pointer;user-select:none"></div>
+          <div class="cal-month-picker" id="calMonthPicker" style="display:none">
+            <select id="calPickYear" onchange="jumpToMonth()" style="font-size:14px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);margin-right:4px"></select>
+            <select id="calPickMonth" onchange="jumpToMonth()" style="font-size:14px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text)">
+              <option value="0">1月</option><option value="1">2月</option><option value="2">3月</option>
+              <option value="3">4月</option><option value="4">5月</option><option value="5">6月</option>
+              <option value="6">7月</option><option value="7">8月</option><option value="8">9月</option>
+              <option value="9">10月</option><option value="10">11月</option><option value="11">12月</option>
+            </select>
+          </div>
+        </div>
         <button class="cal-nav" onclick="calMove(1)">›</button>
       </div>
       <div class="cal-grid" id="calGrid"></div>
@@ -1482,10 +1539,10 @@ body::after {
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-submit" id="submitBtn" onclick="submitConcert()">
+      <button class="btn-secondary" onclick="closeModal('addModal')">キャンセル</button>
+      <button class="btn-primary" id="submitBtn" onclick="submitConcert()">
         <span>✓</span> <span id="submitLabel">登録する</span>
       </button>
-      <button class="btn-secondary" onclick="closeModal('addModal')">キャンセル</button>
     </div>
   </div>
 </div>
@@ -1764,6 +1821,34 @@ function initCalendar() {
   renderCalendar();
 }
 
+
+function toggleMonthPicker() {
+  const picker = document.getElementById('calMonthPicker');
+  const label = document.getElementById('calMonthLabel');
+  if (picker.style.display === 'none') {
+    // 年の選択肢を生成（現在年-2〜+3）
+    const yearSel = document.getElementById('calPickYear');
+    yearSel.innerHTML = '';
+    for (let y = calYear - 2; y <= calYear + 3; y++) {
+      yearSel.innerHTML += '<option value="' + y + '"' + (y === calYear ? ' selected' : '') + '>' + y + '年</option>';
+    }
+    document.getElementById('calPickMonth').value = calMonth;
+    picker.style.display = 'flex';
+    label.style.display = 'none';
+  } else {
+    picker.style.display = 'none';
+    label.style.display = '';
+  }
+}
+
+function jumpToMonth() {
+  calYear = parseInt(document.getElementById('calPickYear').value);
+  calMonth = parseInt(document.getElementById('calPickMonth').value);
+  renderCalendar();
+  document.getElementById('calMonthPicker').style.display = 'none';
+  document.getElementById('calMonthLabel').style.display = '';
+}
+
 function calMove(dir) {
   calMonth += dir;
   if (calMonth < 0) { calMonth = 11; calYear--; }
@@ -1808,7 +1893,7 @@ function renderCalendar() {
         const t = c.title || '';
         calLabel = esc(t.length > 12 ? t.slice(0,11) + '…' : t);
       }
-      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" title="' + esc(c.title) + '">' + calLabel + '</div>';
+      eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" data-title="' + esc(c.title) + '">' + calLabel + '</div>';
     });
 
     const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail(\'' + dayConcerts[0].id + '\')" style="cursor:pointer"' : '';
