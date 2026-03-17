@@ -1893,31 +1893,22 @@ function clearForm() {
 }
 
 // ── URL FETCH ─────────────────────────────────────────────
-async function callGemini(body, retries = 3) {
+async function callGemini(body, retries = 2) {
   for (let i = 0; i <= retries; i++) {
     let res;
     try {
-      res = await fetch(GEMINI_URL, {
+      res = await fetch(WORKER_PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...body, generationConfig: { temperature: 0 } })
+        body: JSON.stringify(body)
       });
     } catch(netErr) {
       if (i < retries) { await new Promise(r => setTimeout(r, 3000)); continue; }
       throw new Error('ネットワークエラー: ' + netErr.message);
     }
-    if (res.status === 429) {
-      if (i < retries) {
-        const wait = 8000 * (i + 1);
-        showToast('制限中... ' + (wait/1000) + '秒後に再試行 (' + (i+1) + '/' + retries + ')', 'ok');
-        await new Promise(r => setTimeout(r, wait));
-        continue;
-      }
-      throw new Error('レート制限(429)。1分ほど待ってから再試行してください');
-    }
     if (!res.ok) {
       let msg = 'API Error ' + res.status;
-      try { const e = await res.json(); msg += ': ' + (e.error?.message || '').slice(0,60); } catch(e2) {}
+      try { const e = await res.json(); msg += ': ' + (e.error || '').slice(0,60); } catch(e2) {}
       throw new Error(msg);
     }
     const data = await res.json();
