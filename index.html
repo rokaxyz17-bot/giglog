@@ -410,412 +410,75 @@ body::after {
 
 .concert-card {
   background: var(--surface);
-  border: 1.5px solid var(--border);
   border-radius: 14px;
-  padding: 18px 20px;
   cursor: pointer;
   transition: all 0.18s;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
   position: relative;
   overflow: hidden;
-}
-
-.concert-card::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--accent);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.concert-card:hover {
-  border-color: var(--accent2);
-  box-shadow: 0 4px 20px rgba(26,92,255,0.08);
-  transform: translateY(-1px);
-}
-
-.concert-card:hover::before {
-  opacity: 1;
-}
-
-.concert-date-block {
-  min-width: 52px;
-  text-align: center;
-  background: var(--accent-dim);
-  border-radius: 10px;
-  padding: 8px 6px;
-  flex-shrink: 0;
-}
-
-.concert-date-month {
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.concert-date-day {
-  font-family: var(--cond);
-  font-size: 26px;
-  font-weight: 900;
-  color: var(--accent);
-  line-height: 1;
-  margin-top: 1px;
-}
-
-.concert-date-weekday {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.concert-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.concert-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-
-.concert-artist {
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.concert-meta {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.concert-meta-item {
-  font-size: 11px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-/* ── EMPTY STATE ── */
-.empty-state {
-  text-align: center;
-  padding: 64px 20px;
-  color: var(--text-dim);
-}
-
-.empty-icon {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: var(--text-muted);
-}
-
-/* ── CALENDAR ── */
-
-.calendar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.calendar-title {
-  font-family: var(--cond);
-  font-size: 22px;
-  font-weight: 900;
-  color: var(--text);
-  letter-spacing: 0.02em;
-}
-
-.btn-cal-nav {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 14px;
-  font-size: 16px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-cal-nav:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.calendar-grid {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.calendar-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  background: var(--surface2);
-  border-bottom: 1.5px solid var(--border);
-}
-
-.cal-weekday {
-  text-align: center;
-  padding: 10px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.calendar-days {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-}
-
-.cal-day {
-  min-height: 72px;
-  padding: 8px;
+  border-left: 4px solid #e5e7eb;
+  border-top: 1px solid var(--border);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  transition: background 0.12s;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
 }
-
-.cal-day:nth-child(7n) { border-right: none; }
-
-.cal-day.other-month .cal-day-num { color: var(--text-dim); }
-
-.cal-day.today .cal-day-num {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 50%;
-  width: 24px; height: 24px;
+.concert-card[data-type="ワンマン"]      { border-left-color: var(--et-wanman); }
+.concert-card[data-type="フェス"]        { border-left-color: var(--et-fes); }
+.concert-card[data-type="リリースイベント"] { border-left-color: var(--et-release); }
+.concert-card[data-type="対バンライブ"]  { border-left-color: var(--et-taiband); }
+.concert-card[data-type="その他"]        { border-left-color: var(--et-other); }
+.concert-card:hover {
+  box-shadow: 0 4px 20px rgba(26,92,255,0.10);
+  transform: translateY(-1px);
+}
+.concert-card-inner {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 700;
-}
-
-.cal-day-num {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  font-weight: 700;
-}
-
-.cal-event {
-  font-size: 10px;
-  background: var(--accent-dim);
-  color: var(--accent);
-  border-radius: 4px;
-  padding: 2px 5px;
-  margin-bottom: 2px;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  display: block;
-}
-
-.cal-event:hover { background: rgba(26,92,255,0.18); }
-
-/* ── MODAL ── */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(10,15,35,0.5);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.modal-overlay.open { display: flex; }
-
-.modal {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 20px;
+  gap: 0;
   width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(10,15,35,0.18);
+  padding: 16px 20px;
 }
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 22px 24px 16px;
-  border-bottom: 1.5px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: var(--surface);
-  z-index: 1;
-}
-
-.modal-title {
-  font-family: var(--cond);
-  font-size: 20px;
-  font-weight: 900;
-  color: var(--text);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.btn-close {
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: all 0.15s;
-}
-
-.btn-close:hover {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-.modal-body { padding: 24px; }
-
-/* ── ADD MODAL TABS ── */
-.add-method-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.add-method-btn {
-  flex: 1;
-  padding: 12px 8px;
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
+.card-date-col {
+  min-width: 52px;
   text-align: center;
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+  margin-right: 20px;
 }
-
-.add-method-btn.active {
-  background: var(--accent-dim);
-  border-color: var(--accent);
-  color: var(--accent);
+.card-month { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.card-day { font-size: 28px; font-weight: 900; color: var(--text); line-height: 1; font-family: 'Barlow Condensed', sans-serif; }
+.card-weekday { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+.card-body-col { flex: 1; min-width: 0; }
+.card-type-badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 6px; margin-bottom: 5px;
 }
-
-.add-method-btn:hover:not(.active) {
-  border-color: var(--border2);
-  color: var(--text);
+.card-type-badge[data-type="ワンマン"]      { background: #dbeafe; color: var(--et-wanman); }
+.card-type-badge[data-type="フェス"]        { background: #fef3c7; color: var(--et-fes); }
+.card-type-badge[data-type="リリースイベント"] { background: #d1fae5; color: var(--et-release); }
+.card-type-badge[data-type="対バンライブ"]  { background: #ede9fe; color: var(--et-taiband); }
+.card-type-badge[data-type="その他"]        { background: #f3f4f6; color: var(--et-other); }
+.card-title { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-artist { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.card-times { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.time-chip {
+  font-size: 10px; font-weight: 700; font-family: 'Space Mono', monospace;
+  padding: 3px 8px; border-radius: 6px;
+  background: var(--bg); color: var(--text-muted);
+  border: 1px solid var(--border);
 }
-
-.add-pane { display: none; }
-.add-pane.active { display: block; }
-
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+.time-chip.merch   { color: var(--et-fes);    background: #fef3c7; border-color: #fde68a; }
+.time-chip.tokuten { color: var(--et-taiband); background: #ede9fe; border-color: #c4b5fd; }
+.card-meta-col {
+  min-width: 90px;
+  text-align: right;
+  padding-left: 16px;
 }
-
-/* ── AI LOADING ── */
-.ai-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 32px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.spinner {
-  width: 28px; height: 28px;
-  border: 2.5px solid var(--border2);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── MODAL ACTIONS ── */
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  padding-top: 8px;
-  margin-top: 8px;
-  border-top: 1.5px solid var(--border);
-}
-
-.btn-secondary {
-  padding: 10px 16px;
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  white-space: nowrap;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-secondary:hover {
-  border-color: var(--border2);
-  color: var(--text);
-}
-
-.btn-danger {
-  padding: 10px 20px;
-  background: none;
-  border: 1.5px solid var(--red);
-  border-radius: 10px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--red);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-danger:hover {
-  background: var(--red-dim);
-}
+.venue-tag { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
+.transport-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; justify-content: flex-end; }
+.transport-tag { font-size: 10px; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); padding: 2px 6px; border-radius: 5px; }
 
 /* ── DETAIL MODAL ── */
 .detail-hero {
@@ -1618,15 +1281,15 @@ body::after {
         </div>
         <div class="field col-full">
           <label>タイトル *</label>
-          <input type="text" id="fTitle" placeholder="例：ExWHYZ 3rd Anniversary Live">
+          <input type="text" id="fTitle" placeholder="例：ExWHYZ 3rd Anniversary Live" oninput="autoFillCalLabel()">
         </div>
         <div class="field col-full">
           <label>表示名 <span style="font-size:10px;color:var(--text-muted);font-weight:400">（任意・カレンダー略称）</span></label>
-          <input type="text" id="fCalLabel" placeholder="例：ExWHYZ@東京、サマソニ2026">
+          <input type="text" id="fCalLabel" placeholder="例：ExWHYZ@東京、サマソニ2026" oninput="this.dataset.userEdited='true'" onfocus="if(!this.value)this.dataset.userEdited='false'">
         </div>
         <div class="field col-full">
           <label>アーティスト</label>
-          <input type="text" id="fArtist" placeholder="例：ExWHYZ">
+          <input type="text" id="fArtist" oninput="autoFillCalLabel()" placeholder="例：ExWHYZ">
         </div>
         <div class="field">
           <label>公演日</label>
@@ -1648,7 +1311,7 @@ body::after {
         </div>
         <div class="field">
           <label>場所（都市）</label>
-          <input type="text" id="fCity" placeholder="例：東京">
+          <input type="text" id="fCity" placeholder="例：東京" oninput="autoFillCalLabel()">
         </div>
       </div>
 
@@ -1940,45 +1603,44 @@ async function loadConcerts() {
 function renderList() {
   const el = document.getElementById('concertList');
   if (!concerts.length) {
-    el.innerHTML = `<div class="empty-state">
-      <span class="empty-icon">🎤</span>
-      <p>まだ遠征が登録されていません<br>「遠征を追加」から登録しましょう</p>
-    </div>`;
+    el.innerHTML = '<div class="empty-state"><p>まだ遠征が登録されていません</p></div>';
     return;
   }
-
-  el.innerHTML = concerts.map(c => {
+  const sorted = [...concerts].sort((a,b) => (a.concert_date||'').localeCompare(b.concert_date||''));
+  el.innerHTML = sorted.map(c => {
     const d = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
-    const monthStr = d ? `${d.getMonth()+1}月` : '—';
+    const monthStr = d ? (d.getMonth()+1) + '月' : '—';
     const dayStr = d ? d.getDate() : '—';
     const wdStr = d ? WEEKDAYS[d.getDay()] : '';
-
+    const et = c.event_type || '';
     const times = [];
-    if (c.open_time) times.push(`<div class="time-chip">🚪 ${c.open_time.slice(0,5)}</div>`);
-    if (c.start_time) times.push(`<div class="time-chip">▶ ${c.start_time.slice(0,5)}</div>`);
-    if (c.merch_time) times.push(`<div class="time-chip merch">🛍 ${c.merch_time.slice(0,5)}</div>`);
-    if (c.tokuten_time) times.push(`<div class="time-chip tokuten">🌟 ${c.tokuten_time.slice(0,5)}</div>`);
-
-    const transport = (c.transport || []).join(' ');
-
-    return `<div class="concert-card" onclick="openDetail('${c.id}')">
-      <div class="concert-card-inner">
-        <div class="card-date-col">
-          <div class="card-month">${monthStr}</div>
-          <div class="card-day">${dayStr}</div>
-          <div class="card-weekday">${wdStr}</div>
-        </div>
-        <div class="card-body-col">
-          <div class="card-title">${esc(c.title)}</div>
-          ${c.artist ? `<div class="card-artist">${esc(c.artist)}</div>` : ''}
-          <div class="card-times">${times.join('')}</div>
-        </div>
-        <div class="card-meta-col">
-          <div class="venue-tag">${esc(c.venue||'')}${c.city ? '<br>'+esc(c.city) : ''}</div>
-          ${transport ? `<div class="transport-tags">${(c.transport||[]).map(t=>`<span class="transport-tag">${t}</span>`).join('')}</div>` : ''}
-        </div>
-      </div>
-    </div>`;
+    if (c.open_time)    times.push('<div class="time-chip">開場 ' + c.open_time.slice(0,5) + '</div>');
+    if (c.start_time)   times.push('<div class="time-chip">開演 ' + c.start_time.slice(0,5) + '</div>');
+    if (c.merch_time)   times.push('<div class="time-chip merch">物販 ' + c.merch_time.slice(0,5) + '</div>');
+    if (c.tokuten_time) times.push('<div class="time-chip tokuten">特典会 ' + c.tokuten_time.slice(0,5) + '</div>');
+    const badge = et ? '<div class="card-type-badge" data-type="' + esc(et) + '">' + esc(et) + '</div>' : '';
+    const meta = (c.transport||[]).length ? '<div class="transport-tags">' + (c.transport||[]).map(t => '<span class="transport-tag">' + t + '</span>').join('') + '</div>' : '';
+    return [
+      '<div class="concert-card" data-type="' + esc(et) + '" onclick="openDetail(\'' + c.id + '\')">',
+        '<div class="concert-card-inner">',
+          '<div class="card-date-col">',
+            '<div class="card-month">' + monthStr + '</div>',
+            '<div class="card-day">' + dayStr + '</div>',
+            '<div class="card-weekday">' + wdStr + '</div>',
+          '</div>',
+          '<div class="card-body-col">',
+            badge,
+            '<div class="card-title">' + esc(c.title) + '</div>',
+            (c.artist ? '<div class="card-artist">' + esc(c.artist) + '</div>' : ''),
+            '<div class="card-times">' + times.join('') + '</div>',
+          '</div>',
+          '<div class="card-meta-col">',
+            '<div class="venue-tag">' + esc(c.venue||'') + (c.city ? '<br><span style="color:var(--text-muted);font-weight:500">' + esc(c.city) + '</span>' : '') + '</div>',
+            meta,
+          '</div>',
+        '</div>',
+      '</div>'
+    ].join('');
   }).join('');
 }
 
@@ -2035,10 +1697,31 @@ function jumpToMonth() {
 
 function selectEventType(el) {
   document.querySelectorAll('.et-chip').forEach(c => c.classList.remove('selected'));
+  const calLabelInput = document.getElementById('fCalLabel'); if (calLabelInput) calLabelInput.dataset.userEdited = 'false';
   el.classList.add('selected');
   el.querySelector('input[type="radio"]').checked = true;
 }
 
+
+function autoFillCalLabel() {
+  const title = document.getElementById('fTitle').value.trim();
+  const artist = document.getElementById('fArtist').value.trim();
+  const city = document.getElementById('fCity').value.trim();
+  const calLabelEl = document.getElementById('fCalLabel');
+  if (!calLabelEl || calLabelEl.dataset.userEdited === 'true') return;
+  // 自動生成ロジック: 20文字以下→タイトル、超→アーティスト@都市 or アーティスト
+  let auto = '';
+  if (title.length <= 20) {
+    auto = title;
+  } else if (artist && city) {
+    auto = artist + '@' + city;
+  } else if (artist) {
+    auto = artist;
+  } else {
+    auto = title.slice(0, 19) + '…';
+  }
+  calLabelEl.value = auto;
+}
 function calMove(dir) {
   calMonth += dir;
   if (calMonth < 0) { calMonth = 11; calYear--; }
@@ -2327,6 +2010,7 @@ function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function clearForm() {
   document.querySelectorAll('.et-chip').forEach(c => c.classList.remove('selected'));
+  const calLabelInput = document.getElementById('fCalLabel'); if (calLabelInput) calLabelInput.dataset.userEdited = 'false';
   document.querySelectorAll('input[name="eventType"]').forEach(r => r.checked = false);
   ['fTitle','fArtist','fDate','fVenue','fCity','fOpenTime','fStartTime',
    'fMerchTime','fTokutenTime','fCdSaleTime','fCalLabel','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
