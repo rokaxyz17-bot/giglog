@@ -782,10 +782,11 @@ body::after {
 }
 
 .btn-secondary {
-  padding: 10px 20px;
+  padding: 10px 16px;
   background: none;
   border: 1.5px solid var(--border);
   border-radius: 10px;
+  white-space: nowrap;
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 600;
@@ -1237,6 +1238,18 @@ body::after {
 .cal-event:hover::after {
   opacity: 1;
 }
+
+.cal-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.cal-nav-picker {
+  color: var(--accent);
+  padding: 4px 6px;
+  opacity: 0.7;
+}
+.cal-nav-picker:hover { opacity: 1; }
 </style>
 <body>
 
@@ -1377,9 +1390,21 @@ body::after {
     <!-- Calendar view -->
     <div id="calendarView">
       <div class="cal-header">
-        <button class="cal-nav" onclick="calMove(-1)">‹</button>
+        <div class="cal-nav-left">
+          <button class="cal-nav" onclick="calMove(-1)">‹</button>
+          <button class="cal-nav cal-nav-picker" onclick="toggleMonthPicker()" title="月を選択">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <path d="M5 1v4M11 1v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M1 7h14" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="5.5" cy="10.5" r="1" fill="currentColor"/>
+              <circle cx="8" cy="10.5" r="1" fill="currentColor"/>
+              <circle cx="10.5" cy="10.5" r="1" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
         <div class="cal-month-center">
-          <div class="cal-month-label" id="calMonthLabel" onclick="toggleMonthPicker()" style="cursor:pointer;user-select:none"></div>
+          <div class="cal-month-label" id="calMonthLabel"></div>
           <div class="cal-month-picker" id="calMonthPicker" style="display:none">
             <select id="calPickYear" onchange="jumpToMonth()" style="font-size:14px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);margin-right:4px"></select>
             <select id="calPickMonth" onchange="jumpToMonth()" style="font-size:14px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text)">
@@ -1531,6 +1556,11 @@ body::after {
         <div class="field col-full">
           <label>公演詳細URL</label>
           <input type="url" id="fConcertUrl" placeholder="公演の公式ページ">
+        </div>
+        <div class="field col-full">
+          <label>📌 カレンダー表示名（略称・任意）</label>
+          <input type="text" id="fCalLabel" placeholder="例：ExWHYZ@東京、サマソニ2026">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">空欄の場合は自動生成（短いタイトル→そのまま、長い場合→アーティスト@都市）</div>
         </div>
         <div class="field col-full">
           <label>メモ</label>
@@ -1883,15 +1913,25 @@ function renderCalendar() {
 
     let eventsHtml = '';
     dayConcerts.forEach(function(c) {
-      // 略称: アーティスト@都市 or タイトル省略
+      // 略称: 任意設定 > タイトル短い場合そのまま > アーティスト@都市
       let calLabel;
-      if (c.artist && c.city) {
-        calLabel = esc(c.artist) + '@' + esc(c.city);
-      } else if (c.artist) {
-        calLabel = esc(c.artist);
+      if (c.cal_label) {
+        calLabel = esc(c.cal_label);
       } else {
         const t = c.title || '';
-        calLabel = esc(t.length > 12 ? t.slice(0,11) + '…' : t);
+        const a = c.artist || '';
+        const city = c.city || '';
+        // タイトルが短い（12文字以内）→ タイトルをそのまま使う
+        if (t.length <= 12) {
+          calLabel = esc(t);
+        } else if (a && city) {
+          // タイトルが長い → アーティスト@都市
+          calLabel = esc(a) + '@' + esc(city);
+        } else if (a) {
+          calLabel = esc(a);
+        } else {
+          calLabel = esc(t.slice(0,11) + '…');
+        }
       }
       eventsHtml += '<div class="cal-event" onclick="event.stopPropagation();openDetail(\'' + c.id + '\')" data-title="' + esc(c.title) + '">' + calLabel + '</div>';
     });
@@ -1992,6 +2032,7 @@ async function submitConcert() {
     merch_time: document.getElementById('fMerchTime').value || null,
     tokuten_time: document.getElementById('fTokutenTime').value || null,
     cd_sale_time: document.getElementById('fCdSaleTime')?.value || null,
+    cal_label: document.getElementById('fCalLabel')?.value || null,
     venue: document.getElementById('fVenue').value || null,
     city: document.getElementById('fCity').value || null,
     transport: transport.length ? transport : null,
@@ -2022,11 +2063,106 @@ async function submitConcert() {
   await loadConcerts();
 }
 
+function openDetail(id) {
+  const c = concerts.find(x => x.id === id);
+  if (!c) return;
+  detailId = id;
+
+  document.getElementById('detailTitle').textContent = c.title;
+
+  const timeItems = [
+    { key: 'open_time', label: '開場', cls: '' },
+    { key: 'start_time', label: '開演', cls: '' },
+    { key: 'merch_time', label: '物販', cls: 'merch' },
+    { key: 'tokuten_time', label: '特典会', cls: 'tokuten' },
+    { key: 'cd_sale_time', label: 'CD販売', cls: '' },
+  ].filter(t => c[t.key]);
+
+  const timesHtml = timeItems.length ? `
+    <div class="detail-times">
+      ${timeItems.map(t => `
+        <div class="dtime ${t.cls}">
+          <div class="dtime-label">${t.label}</div>
+          <div class="dtime-val">${c[t.key].slice(0,5)}</div>
+        </div>
+      `).join('')}
+    </div>` : '';
+
+  const d = c.concert_date ? new Date(c.concert_date + 'T00:00:00') : null;
+  const dateStr = d ? `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）` : '—';
+
+  document.getElementById('detailBody').innerHTML = `
+    ${timesHtml}
+    <div class="detail-grid">
+      <div class="detail-item"><label>公演日</label><div class="val">${dateStr}</div></div>
+      <div class="detail-item"><label>アーティスト</label><div class="val">${esc(c.artist||'—')}</div></div>
+      <div class="detail-item"><label>会場</label><div class="val">${esc(c.venue||'—')}</div></div>
+      <div class="detail-item"><label>都市</label><div class="val">${esc(c.city||'—')}</div></div>
+      <div class="detail-item"><label>交通手段</label><div class="val">${(c.transport||[]).join('・')||'—'}</div></div>
+      <div class="detail-item"><label>宿泊</label><div class="val">${esc(c.stay||'—')}</div></div>
+      <div class="detail-item"><label>同行者</label><div class="val">${esc(c.companion||'—')}</div></div>
+      ${c.ticket_url ? `<div class="detail-item"><label>チケット</label><div class="val"><a href="${esc(c.ticket_url)}" target="_blank">🔗 開く</a></div></div>` : ''}
+      ${c.concert_url ? `<div class="detail-item"><label>公演詳細</label><div class="val"><a href="${esc(c.concert_url)}" target="_blank">🔗 公式ページ</a></div></div>` : ''}
+      ${c.cal_label ? `<div class="detail-item"><label>カレンダー表示名</label><div class="val">${esc(c.cal_label)}</div></div>` : ''}
+      ${c.memo ? `<div class="detail-item" style="grid-column:1/-1"><label>メモ</label><div class="val">${esc(c.memo)}</div></div>` : ''}
+    </div>`;
+
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function editConcert() {
+  const c = concerts.find(x => x.id === detailId);
+  if (!c) return;
+  closeModal('detailModal');
+  editingId = detailId;
+
+  clearForm();
+  document.getElementById('modalTitle').textContent = '遠征を編集';
+  document.getElementById('submitLabel').textContent = '更新する';
+  setInputMode('manual');
+
+  document.getElementById('fTitle').value = c.title || '';
+  document.getElementById('fArtist').value = c.artist || '';
+  document.getElementById('fDate').value = c.concert_date || '';
+  document.getElementById('fVenue').value = c.venue || '';
+  document.getElementById('fCity').value = c.city || '';
+  document.getElementById('fOpenTime').value = c.open_time?.slice(0,5) || '';
+  document.getElementById('fStartTime').value = c.start_time?.slice(0,5) || '';
+  document.getElementById('fMerchTime').value = c.merch_time?.slice(0,5) || '';
+  document.getElementById('fTokutenTime').value = c.tokuten_time?.slice(0,5) || '';
+  const cdEl = document.getElementById('fCdSaleTime');
+  if (cdEl) cdEl.value = c.cd_sale_time?.slice(0,5) || '';
+  const calLabelEl = document.getElementById('fCalLabel');
+  if (calLabelEl) calLabelEl.value = c.cal_label || '';
+  document.getElementById('fStay').value = c.stay || '';
+  document.getElementById('fCompanion').value = c.companion || '';
+  document.getElementById('fTicketUrl').value = c.ticket_url || '';
+  document.getElementById('fConcertUrl').value = c.concert_url || '';
+  document.getElementById('fMemo').value = c.memo || '';
+
+  if (c.transport) {
+    document.querySelectorAll('.chip').forEach(ch => {
+      if (c.transport.includes(ch.querySelector('input').value)) ch.classList.add('on');
+    });
+  }
+
+  document.getElementById('addModal').classList.add('open');
+}
+
+async function deleteConcert() {
+  if (!confirm('この遠征を削除しますか？')) return;
+  const { error } = await supaClient.from('concerts').delete().eq('id', detailId);
+  if (error) { showToast('削除エラー: ' + error.message, 'err'); return; }
+  closeModal('detailModal');
+  showToast('削除しました', 'ok');
+  await loadConcerts();
+}
+
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function clearForm() {
   ['fTitle','fArtist','fDate','fVenue','fCity','fOpenTime','fStartTime',
-   'fMerchTime','fTokutenTime','fCdSaleTime','fCdSaleTime','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
+   'fMerchTime','fTokutenTime','fCdSaleTime','fCalLabel','fCompanion','fTicketUrl','fConcertUrl','fMemo'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
