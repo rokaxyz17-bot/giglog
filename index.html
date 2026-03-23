@@ -1195,7 +1195,7 @@ body::after {
   gap: 8px;
 }
 .chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 6px 12px;
@@ -1208,6 +1208,7 @@ body::after {
   background: #f8fafc;
   user-select: none;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .chip input[type="checkbox"] { width: 13px; height: 13px; accent-color: #1a5cff; }
 .chip.on { background: #dbeafe; border-color: #1a5cff; color: #1a5cff; }
