@@ -689,10 +689,13 @@ body::after {
 .modal-close:hover { border-color: var(--red); color: var(--red); }
 
 /* ── ADD MODAL STEPS ── */
+.add-modal-top {
+  padding: 16px 20px 0;
+}
 .add-steps {
   display: flex;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .add-step-btn {
   flex: 1;
@@ -722,7 +725,7 @@ body::after {
 }
 
 /* ── INPUT ZONES ── */
-.input-zone { display: none; margin-bottom: 16px; }
+.input-zone { display: none; margin-bottom: 16px; padding: 0 20px; }
 .input-zone.visible { display: block; }
 
 .url-row {
@@ -1394,6 +1397,7 @@ body::after {
     </div>
     <div class="modal-body add-modal-body">
 
+      <div class="add-modal-top">
       <!-- Input method selector -->
       <div class="add-steps">
         <button class="add-step-btn active" id="stepUrl" onclick="setInputMode('url')">
@@ -1438,6 +1442,8 @@ body::after {
       </div>
 
       <!-- Form -->
+            </div>
+
       <div class="form-section">基本情報</div>
       <div class="grid-2">
         <div class="field col-full">
