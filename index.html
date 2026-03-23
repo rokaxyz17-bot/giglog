@@ -631,10 +631,52 @@ body::after {
   .detail-times { gap: 10px; }
   .calendar-grid { font-size: 10px; }
   .cal-day { min-height: 56px; padding: 5px; }
-  .modal { border-radius: 16px; }
+  .modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  overflow: hidden;
+  position: relative;
+}
   .settings-panel { width: 90vw; }
 }
 
+
+/* ── MODAL LAYOUT ── */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e8eaf0;
+  flex-shrink: 0;
+  background: #fff;
+  min-height: 56px;
+}
+.modal-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1f36;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 12px;
+}
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+.modal-body .detail-section {
+  padding: 20px;
+}
 /* ── MODAL CLOSE BTN ── */
 .modal-close {
   background: var(--surface2);
@@ -751,23 +793,15 @@ body::after {
 .status-bar.visible { display: flex; }
 
 /* ── FORM SECTION ── */
-.form-section {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  margin: 20px 0 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
-}
+
 
 /* ── GRID ── */
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
 }
 .col-full { grid-column: 1 / -1; }
 
@@ -882,8 +916,10 @@ body::after {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
+  padding: 14px 20px;
+  border-top: 1px solid #e8eaf0;
+  flex-shrink: 0;
+  background: #fff;
 }
 
 /* ── CUSTOM TOOLTIP ── */
@@ -1058,6 +1094,53 @@ body::after {
 .cal-events-wrap {
   overflow: hidden;
   max-height: 52px;
+}
+
+/* ── FORM VISIBILITY ── */
+.form-section {
+  background: #f4f6fb;
+  padding: 8px 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6b7280;
+  border-top: 1px solid #e8eaf0;
+  border-bottom: 1px solid #e8eaf0;
+}
+.add-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+  padding: 0;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.field input, .field select, .field textarea {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 </style>
 <body>
@@ -1238,7 +1321,7 @@ body::after {
       <div class="modal-title" id="modalTitle">遠征を追加</div>
       <button class="modal-close" onclick="closeModal('addModal')">×</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body add-modal-body">
 
       <!-- Input method selector -->
       <div class="add-steps">
