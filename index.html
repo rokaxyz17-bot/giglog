@@ -319,7 +319,20 @@ body::after {
   box-shadow: 0 8px 32px rgba(0,0,0,0.1);
 }
 
-.settings-panel.open { display: block; }
+.settings-panel.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,15,35,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+
+.open { display: block; }
 
 .settings-title {
   font-size: 11px;
@@ -824,7 +837,7 @@ body::after {
 }
 .cal-cell {
   height: 80px;
-  overflow: hidden;
+  overflow: visible;
   padding: 4px 6px;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -881,7 +894,7 @@ body::after {
 .cal-event::after {
   content: attr(data-title);
   position: absolute;
-  bottom: calc(100% + 4px);
+  top: calc(100% + 4px);
   left: 0;
   background: rgba(20,20,30,0.92);
   color: #fff;
@@ -1042,6 +1055,11 @@ body::after {
   font-weight: 700; cursor: pointer; font-size: 13px;
 }
 .cal-header { position: relative; }
+
+.cal-events-wrap {
+  overflow: hidden;
+  max-height: 52px;
+}
 </style>
 <body>
 
@@ -1782,7 +1800,7 @@ function renderCalendar() {
     const clickAttr = dayConcerts.length > 0 ? ' onclick="openDetail(\'' + dayConcerts[0].id + '\')" style="cursor:pointer"' : '';
     out += '<div class="cal-cell' + (isToday ? ' today' : '') + '"' + clickAttr + '>';
     out += '<span class="cal-day-num">' + d + '</span>';
-    out += eventsHtml;
+    out += '<div class="cal-events-wrap">' + eventsHtml + '</div>';
     out += '</div>';
   }
 
