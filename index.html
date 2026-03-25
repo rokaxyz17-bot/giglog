@@ -323,9 +323,11 @@ body::after {
   background: rgba(10,15,35,0.5);
   backdrop-filter: blur(4px);
   z-index: 1000;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
+  padding: 40px 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .modal-overlay.open { display: flex; }
 
@@ -633,12 +635,13 @@ body::after {
   border-radius: 16px;
   width: 100%;
   max-width: 560px;
-  max-height: 90vh;
+  max-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   overflow: hidden;
   position: relative;
+  flex-shrink: 0;
 }
   .settings-panel { width: 90vw; }
 }
@@ -1217,6 +1220,23 @@ body::after {
 .chip input[type="checkbox"] { width: 13px; height: 13px; accent-color: #1a5cff; }
 .chip.on { background: #dbeafe; border-color: #1a5cff; color: #1a5cff; }
 .chip:hover { border-color: #1a5cff; }
+
+.btn-danger {
+  padding: 10px 16px;
+  background: none;
+  border: 1.5px solid #fca5a5;
+  border-radius: 10px;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #ef4444;
+  transition: all 0.15s;
+}
+.btn-danger:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
 </style>
 <body>
 
