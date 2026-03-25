@@ -332,9 +332,9 @@ body::after {
   z-index: 1000;
   align-items: flex-start;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 0;
   overflow-y: auto;
-  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-overlay.open { display: flex; }
 
@@ -640,14 +640,13 @@ body::after {
   .modal {
   background: #fff;
   border-radius: 16px;
-  width: 100%;
+  width: calc(100% - 32px);
   max-width: 560px;
-  max-height: calc(100vh - 80px);
+  margin: 40px auto;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   overflow: hidden;
-  position: relative;
   flex-shrink: 0;
 }
   .settings-panel { width: 90vw; }
@@ -702,30 +701,38 @@ body::after {
 
 /* ── ADD MODAL STEPS ── */
 .add-modal-top {
-  padding: 16px 20px 0;
+  padding: 16px 16px 0;
   background: #fff;
+  box-sizing: border-box;
+  width: 100%;
 }
 .add-steps {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .add-step-btn {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 12px 8px;
+  padding: 10px 4px;
   background: var(--surface2);
   border: 1.5px solid var(--border);
   border-radius: 10px;
   font-family: var(--sans);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .add-step-btn.active {
   background: var(--accent-dim);
@@ -739,7 +746,7 @@ body::after {
 
 /* ── INPUT ZONES ── */
 .input-zone { display: none; margin-bottom: 0; }
-.input-zone.visible { display: block; padding: 12px 20px 16px; }
+.input-zone.visible { display: block; padding: 12px 16px 16px; box-sizing: border-box; width: 100%; }
 
 .url-row {
   display: flex;
@@ -819,9 +826,11 @@ body::after {
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 14px 20px;
+  gap: 10px;
+  padding: 14px 16px;
   background: #fff;
+  box-sizing: border-box;
+  width: 100%;
 }
 .col-full { grid-column: 1 / -1; }
 
@@ -1179,9 +1188,11 @@ body::after {
 .time-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 14px 20px;
+  gap: 10px;
+  padding: 14px 16px;
   background: #fff;
+  box-sizing: border-box;
+  width: 100%;
 }
 .btn-secondary {
   padding: 10px 16px;
@@ -1234,7 +1245,7 @@ body::after {
   transition: all 0.15s;
   white-space: nowrap;
 }
-.chip input[type="checkbox"] { width: 13px; height: 13px; accent-color: #1a5cff; }
+.chip input[type="checkbox"] { width: 14px !important; height: 14px !important; min-width: 14px !important; flex-shrink: 0 !important; accent-color: #1a5cff; padding: 0 !important; margin: 0 !important; border: none !important; background: none !important; }
 .chip.on { background: #dbeafe; border-color: #1a5cff; color: #1a5cff; }
 .chip:hover { border-color: #1a5cff; }
 
@@ -2462,7 +2473,7 @@ init();
   }, { passive: true });
   document.addEventListener('touchend', function(e) {
     const calView = document.getElementById('calendarView');
-    if (!calView || !calView.classList.contains('active')) return;
+    if (!calView || calView.style.display === 'none') return;
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
