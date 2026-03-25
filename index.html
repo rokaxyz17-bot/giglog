@@ -767,13 +767,20 @@ body::after {
 
 /* ── DROP ZONE ── */
 .drop-zone {
-  border: 2px dashed var(--border2);
+  border: 2px dashed #e2e8f0;
   border-radius: 12px;
-  padding: 32px 20px;
+  padding: 28px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
   position: relative;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .drop-zone:hover { border-color: var(--accent); background: var(--accent-dim); }
 .drop-zone input[type=file] {
@@ -1237,6 +1244,31 @@ body::after {
   background: #fef2f2;
   border-color: #ef4444;
 }
+
+.drop-zone:hover, .drop-zone:active {
+  border-color: #1a5cff;
+  background: #eef3ff;
+}
+.drop-icon-wrap {
+  color: #a0aec0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.drop-zone:hover .drop-icon-wrap, .drop-zone:active .drop-icon-wrap {
+  color: #1a5cff;
+}
+.drop-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1.5;
+}
+.drop-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a0aec0;
+}
 </style>
 <body>
 
@@ -1445,11 +1477,13 @@ body::after {
 
       <!-- Image upload -->
       <div class="input-zone" id="zoneImg">
-        <div class="drop-zone" id="dropZone">
-          <input type="file" id="imgFile" accept="image/*" onchange="handleImg(this.files[0])">
-          <span class="drop-icon">📸</span>
-          <div class="drop-text">チケット・公演スクショをドロップ<br>または タップして選択</div>
-        </div>
+        <label class="drop-zone" id="dropZone" for="imgFile">
+          <input type="file" id="imgFile" accept="image/*" onchange="handleImg(this.files[0])" style="position:absolute;opacity:0;width:0;height:0;">
+          <div class="drop-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          </div>
+          <div class="drop-text" id="dropText">スクショをドロップ<br><span class="drop-sub">またはタップして写真/カメラを選択</span></div>
+        </label>
       </div>
 
       <div class="input-zone" id="zoneManual">
@@ -2284,8 +2318,8 @@ async function fetchFromUrl() {
 
 async function handleImg(file) {
   setStatus(true, 'AIが画像を解析中...');
-  const dz = document.getElementById('dropZone');
-  if (dz) dz.querySelector('.drop-text').textContent = '📎 ' + file.name;
+  const dropText = document.getElementById('dropText');
+  if (dropText) dropText.innerHTML = '<span style="color:#1a5cff;font-weight:700">' + file.name + '</span><br><span class="drop-sub">タップして変更</span>';
 
   let base64;
   try {
