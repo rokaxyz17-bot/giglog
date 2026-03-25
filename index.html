@@ -180,6 +180,8 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .field > label:not(.chip):not(.et-chip) {
@@ -200,6 +202,7 @@ body::after {
   font-size: 14px;
   color: #1a1f36;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   font-family: inherit;
   transition: border-color 0.15s;
@@ -338,7 +341,7 @@ body::after {
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
 }
-.modal-overlay.open { display: flex; }
+.modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
 
 
 .settings-title {
@@ -757,6 +760,7 @@ body::after {
 }
 .url-row input {
   flex: 1;
+  min-width: 0;
   background: var(--surface2);
   border: 1.5px solid var(--border);
   border-radius: 10px;
@@ -828,12 +832,13 @@ body::after {
 /* ── GRID ── */
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   gap: 10px;
   padding: 14px 16px;
   background: #fff;
   box-sizing: border-box;
   width: 100%;
+  overflow: hidden;
 }
 .col-full { grid-column: 1 / -1; }
 
@@ -1044,6 +1049,7 @@ body::after {
   font-family: var(--sans);
   transition: all 0.15s;
   user-select: none;
+  min-width: 0;
 }
 .et-chip input[type="radio"] { display: none; }
 .et-chip.selected { border-width: 2px; }
@@ -1194,12 +1200,13 @@ body::after {
 
 .time-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   gap: 10px;
   padding: 14px 16px;
   background: #fff;
   box-sizing: border-box;
   width: 100%;
+  overflow: hidden;
 }
 .btn-secondary {
   padding: 10px 16px;
